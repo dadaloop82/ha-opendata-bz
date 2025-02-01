@@ -1,0 +1,16 @@
+# Escludi le cartelle e i file generati da Home Assistant
+__pycache__/
+custom_components/provbz_opendata/__pycache__/
+custom_components/provbz_opendata/*.pyc
+custom_components/provbz_opendata/.DS_Store
+
+# Configurazioni locali e segreti
+secrets.yaml
+*.log
+*.db
+*.db-shm
+*.db-wal
+
+# Cartelle di sistema
+.vscode/
+.idea/

@@ -1,0 +1,74 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "OpenData Provinz Bozen",
+                "description": "Diese Integration verwendet die offenen Daten, die von der Autonomen Provinz Bozen über das Open Data Hub Portal bereitgestellt werden.\n\nDie Daten werden unter der CC0 1.0 Universal-Lizenz veröffentlicht, die es ermöglicht:\n- Die Arbeit zu kopieren, zu modifizieren, zu verbreiten und auszuführen\n- Die Daten für kommerzielle Zwecke zu nutzen\n- All dies ohne um Erlaubnis zu fragen\n\nWeitere Informationen: data.civis.bz.it/de/info\n\nGeben Sie bitte einen Namen für diese Integration ein:",
+                "data": {
+                    "name": "Integrationsname"
+                }
+            },
+            "language": {
+                "title": "Sprache auswählen",
+                "description": "Wählen Sie die Sprache für die Daten. Diese Auswahl beeinflusst die Sprache der Beschreibungen und Inhalte, die von der API bereitgestellt werden.",
+                "data": {
+                    "language": "Sprache"
+                }
+            },
+            "group": {
+                "title": "Gruppe auswählen",
+                "description": "Die Daten sind in thematische Gruppen gegliedert. Wählen Sie die Gruppe, die Sie überwachen möchten. Diese Auswahl bestimmt, welche Datensätze im nächsten Schritt verfügbar sind.",
+                "data": {
+                    "group_id": "Gruppe"
+                }
+            },
+            "package": {
+                "title": "Datensatz auswählen",
+                "description": "Wählen Sie den spezifischen Datensatz, den Sie innerhalb der ausgewählten Gruppe überwachen möchten. Jeder Datensatz enthält Daten, die einem bestimmten Thema zugeordnet sind.\n\nAktuelle API-URL: {api_url}",
+                "data": {
+                    "package_id": "Datensatz"
+                }
+            },
+            "resource": {
+                "title": "Ressource auswählen",
+                "description": "Wählen Sie die JSON-Ressource aus, die Sie überwachen möchten. Ressourcen sind die eigentlichen Datenquellen innerhalb des ausgewählten Datensatzes.\n\nAktuelle API-URL: {api_url}",
+                "data": {
+                    "resource_id": "Ressource"
+                }
+            },
+            "rows": {
+                "title": "Elemente auswählen",
+                "description": "Wählen Sie die spezifischen Elemente aus, die Sie überwachen möchten. Sie können mehrere Elemente gleichzeitig über die Kontrollkästchen auswählen.\n\nAktuelle API-URL: {api_url}",
+                "data": {
+                    "rows": "Verfügbare Elemente"
+                }
+            },
+            "fields": {
+                "title": "Felder auswählen",
+                "description": "Wählen Sie für die ausgewählten Elemente die spezifischen Felder aus, die Sie überwachen möchten. Diese Felder werden zu Sensoren in Home Assistant.\n\nAktuelle API-URL: {api_url}",
+                "data": {
+                    "fields": "Verfügbare Felder"
+                }
+            },
+            "confirm": {
+                "title": "Konfiguration bestätigen",
+                "description": "Überprüfen Sie Ihre Auswahl. Home Assistant erstellt Sensoren für jedes ausgewählte Feld jedes gewählten Elements.\n\nKonfigurationsdetails:\n\n{fields_preview}\n\nEndgültige API-URL: {api_url}\n\nMöchten Sie mit dieser Konfiguration fortfahren?",
+                "data": {}
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung zur API fehlgeschlagen",
+            "invalid_auth": "Ungültige Authentifizierung",
+            "no_fields_available": "Keine Felder in den Daten verfügbar",
+            "no_rows_available": "Keine Elemente in den Daten verfügbar",
+            "no_rows_selected": "Bitte wählen Sie mindestens ein Element aus",
+            "no_fields_selected": "Bitte wählen Sie mindestens ein Feld aus",
+            "no_packages": "Kein Datensatz in der ausgewählten Gruppe verfügbar",
+            "no_json_resources": "Keine JSON-Ressource im Datensatz verfügbar",
+            "unknown": "Unerwarteter Fehler"
+        },
+        "abort": {
+            "already_configured": "Diese Integration ist bereits konfiguriert"
+        }
+    }
+}

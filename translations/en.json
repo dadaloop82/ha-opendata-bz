@@ -1,0 +1,73 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "OpenData Province of Bolzano",
+                "description": "This integration uses the open data provided by the Autonomous Province of Bolzano through the Open Data Hub portal.\n\nThe data is released under a CC0 1.0 Universal license that allows you to:\n- Copy, modify, distribute and perform the work\n- Use the data for commercial purposes\n- All without asking for permission\n\nFor more information: data.civis.bz.it/en/info\n\nTo get started, please enter a name for this integration:",
+                "data": {
+                    "name": "Integration Name"
+                }
+            },
+            "language": {
+                "title": "Select Language",
+                "description": "Select the language for the data. This choice will affect the language of the descriptions and content provided by the API.",
+                "data": {
+                    "language": "Language"
+                }
+            },
+            "group": {
+                "title": "Select Group",
+                "description": "The data is organized into thematic groups. Select the group you want to monitor. This choice will determine which datasets will be available in the next step.",
+                "data": {
+                    "group_id": "Group"
+                }
+            },
+            "package": {
+                "title": "Select Dataset",
+                "description": "Choose the specific dataset to monitor within the selected group. Each dataset contains data related to a specific theme.\n\nCurrent API URL: {api_url}",
+                "data": {
+                    "package_id": "Dataset"
+                }
+            },
+            "resource": {
+                "title": "Select Resource",
+                "description": "Select the JSON resource you want to monitor. Resources are the actual data sources within the selected dataset.\n\nCurrent API URL: {api_url}",
+                "data": {
+                    "resource_id": "Resource"
+                }
+            },
+            "rows": {
+                "title": "Select Items",
+                "description": "Select the specific items you want to monitor. You can select more than one item simultaneously using the checkboxes.\n\nCurrent API URL: {api_url}",
+                "data": {
+                    "rows": "Available Items"
+                }
+            },
+            "fields": {
+                "title": "Select Fields",
+                "description": "For the selected items, choose which specific fields you want to monitor. These fields will become sensors in Home Assistant.\n\nCurrent API URL: {api_url}",
+                "data": {
+                    "fields": "Available Fields"
+                }
+            },
+            "confirm": {
+                "title": "Confirm Configuration",
+                "description": "Review your selections. Home Assistant will create sensors for each selected field of every chosen item.\n\nConfiguration details:\n\n{fields_preview}\n\nFinal API URL: {api_url}\n\nDo you want to proceed with this configuration?"
+            }
+        },
+        "error": {
+            "cannot_connect": "Unable to connect to the API",
+            "invalid_auth": "Invalid authentication",
+            "no_fields_available": "No fields available in the data",
+            "no_rows_available": "No items available in the data",
+            "no_rows_selected": "Please select at least one item",
+            "no_fields_selected": "Please select at least one field",
+            "no_packages": "No dataset available in the selected group",
+            "no_json_resources": "No JSON resource available in the dataset",
+            "unknown": "Unexpected error"
+        },
+        "abort": {
+            "already_configured": "This integration is already configured"
+        }
+    }
+}
