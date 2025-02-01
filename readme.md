@@ -20,24 +20,18 @@ The **OpenData Alto Adige Integration** connects Home Assistant to the OpenData 
 
 ## Installation
 
-### Via HACS
+### Via HACS (Recommended)
 
 1. Open HACS in Home Assistant.
-2. Go to **Integrations**.
-3. Click the **+ Explore & Add Repositories** button.
-4. Search for **"OpenData Alto Adige"**.
-5. Click **Install**.
-6. Restart Home Assistant.
-7. Go to **Settings > Integrations**, click **Add Integration**, and search for **OpenData Alto Adige**.
-
-[![HACS Badge](https://custom-components.github.io/hacs/badge.svg)](https://github.com/custom-components/hacs)
-
-### Manual Installation
-
-1. Copy the entire `custom_components/provbz_opendata` folder into your Home Assistant `custom_components` directory.
-2. Restart Home Assistant.
-3. Go to **Configuration > Integrations**.
-4. Click the **+ ADD INTEGRATION** button and search for **"OpenData Alto Adige"**.
+2. Go to **Settings > Devices & Services**.
+3. Click the **+ Add Integration** button.
+4. Search for **"HACS"** and configure it if you haven't already.
+5. Go to **HACS > Integrations**.
+6. Click the **+ Explore & Add Repositories** button.
+7. Add the following repository URL: `https://github.com/dadaloop82/ha-opendata-bz`
+8. Select the **"OpenData Alto Adige"** integration and click **Install**.
+9. Restart Home Assistant.
+10. Go to **Settings > Devices & Services**, click **+ Add Integration**, and search for **"OpenData Alto Adige"** to configure the integration.
 
 ## Configuration
 
