@@ -3,10 +3,10 @@
     "name": "OpenData Provincia Bolzano",
     "codeowners": ["@dadaloop82"],
     "config_flow": true,
-    "documentation": "https://github.com/dadaloop82/ha-opendata-bolzano",
+    "documentation": "https://github.com/dadaloop82/ha-opendata-bz/",
     "iot_class": "cloud_polling",
     "version": "1.0.0",
-    "issue_tracker": "https://github.com/dadaloop82/ha-opendata-bolzano/issues",
+    "issue_tracker": "https://github.com/dadaloop82/ha-opendata-bz//issues",
     "requirements": [],
     "integration_type": "service"
 }
