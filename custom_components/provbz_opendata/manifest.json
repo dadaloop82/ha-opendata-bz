@@ -9,5 +9,5 @@
     "issue_tracker": "https://github.com/dadaloop82/ha-opendata-bolzano/issues",
     "requirements": [],
     "integration_type": "service",
-    "logo": "images/logo.png"
+    "logo": "custom_components/provbz_opendata/icon.png"
 }
