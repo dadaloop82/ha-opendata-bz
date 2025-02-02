@@ -1,12 +1,12 @@
 {
-    "domain": "opendata_provincia_bolzano",
-    "name": "OpenData Provincia Bolzano",
-    "codeowners": ["@dadaloop82"],
-    "config_flow": true,
-    "documentation": "https://github.com/dadaloop82/ha-opendata-bolzano",
-    "iot_class": "cloud_polling",
-    "version": "1.0.0",
-    "issue_tracker": "https://github.com/dadaloop82/ha-opendata-bolzano/issues",
-    "requirements": [],
-    "integration_type": "service"
+  "domain": "opendata_provincia_bolzano",
+  "name": "OpenData Provincia Bolzano",
+  "codeowners": ["@dadaloop82"],
+  "config_flow": true,
+  "documentation": "https://github.com/dadaloop82/ha-opendata-bolzano",
+  "iot_class": "cloud_polling",
+  "version": "1.0.0",
+  "issue_tracker": "https://github.com/dadaloop82/ha-opendata-bolzano/issues",
+  "requirements": ["pandas>=1.5.0", "openpyxl>=3.0.0"],
+  "integration_type": "service"
 }

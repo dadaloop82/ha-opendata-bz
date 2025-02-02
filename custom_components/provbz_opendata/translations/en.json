@@ -2,22 +2,22 @@
     "config": {
         "step": {
             "user": {
-                "title": "OpenData Province of Bolzano",
-                "description": "This integration uses the open data provided by the Autonomous Province of Bolzano through the Open Data Hub portal.\n\nThe data is released under a CC0 1.0 Universal license that allows you to:\n- Copy, modify, distribute and perform the work\n- Use the data for commercial purposes\n- All without asking for permission\n\nFor more information: data.civis.bz.it/en/info\n\nTo get started, please enter a name for this integration:",
+                "title": "OpenData South Tyrol",
+                "description": "This integration uses open data provided by the Autonomous Province of Bolzano/South Tyrol through the Open Data Hub portal.\n\nThe data is released under CC0 1.0 Universal license which allows you to:\n- Copy, modify, distribute and perform the work\n- Use the data for commercial purposes\n- All without asking for permission\n\nFor more information: data.civis.bz.it/en/info\n\nTo begin, enter a name for this integration:",
                 "data": {
-                    "name": "Integration Name"
+                    "name": "Integration name"
                 }
             },
             "language": {
-                "title": "Select Language",
-                "description": "Select the language for the data. This choice will affect the language of the descriptions and content provided by the API.",
+                "title": "Language Selection",
+                "description": "Select the language for the data. This choice will affect the language of descriptions and content provided by the API.",
                 "data": {
                     "language": "Language"
                 }
             },
             "group": {
                 "title": "Select Group",
-                "description": "The data is organized into thematic groups. Select the group you want to monitor. This choice will determine which datasets will be available in the next step.",
+                "description": "Data is organized into thematic groups. Select the data group you're interested in monitoring. This choice will determine which datasets will be available in the next step.",
                 "data": {
                     "group_id": "Group"
                 }
@@ -31,39 +31,40 @@
             },
             "resource": {
                 "title": "Select Resource",
-                "description": "Select the JSON resource you want to monitor. Resources are the actual data sources within the selected dataset.\n\nCurrent API URL: {api_url}",
+                "description": "Select the resource (JSON, WFS, or XLSX) you want to monitor. Resources are the actual data sources within the selected dataset.\n\nCurrent API URL: {api_url}",
                 "data": {
                     "resource_id": "Resource"
                 }
             },
             "rows": {
-                "title": "Select Items",
-                "description": "Select the specific items you want to monitor. You can select more than one item simultaneously using the checkboxes.\n\nCurrent API URL: {api_url}",
+                "title": "Select Item",
+                "description": "Select from the list the specific item you want to monitor.\n\nCurrent API URL: {api_url}",
                 "data": {
-                    "rows": "Available Items"
+                    "row": "Available Item"
                 }
             },
             "fields": {
                 "title": "Select Fields",
-                "description": "For the selected items, choose which specific fields you want to monitor. These fields will become sensors in Home Assistant.\n\nCurrent API URL: {api_url}",
+                "description": "For the selected item, choose which specific fields you want to monitor. These fields will become sensors in Home Assistant.\n\nCurrent API URL: {api_url}",
                 "data": {
                     "fields": "Available Fields"
                 }
             },
             "confirm": {
                 "title": "Confirm Configuration",
-                "description": "Review your selections. Home Assistant will create sensors for each selected field of every chosen item.\n\nConfiguration details:\n\n{fields_preview}\n\nFinal API URL: {api_url}\n\nDo you want to proceed with this configuration?"
+                "description": "Verify your selections. Home Assistant will create sensors for each selected field of each chosen item.\n\nI will create the following entities:\n{fields_preview}\n\nFinal API URL: {api_url}\n\nDo you want to proceed with this configuration?"
             }
         },
         "error": {
-            "cannot_connect": "Unable to connect to the API",
+            "cannot_connect": "Unable to connect to API",
             "invalid_auth": "Invalid authentication",
+            "invalid_xlsx": "The XLSX file cannot be read or is invalid",
             "no_fields_available": "No fields available in the data",
             "no_rows_available": "No items available in the data",
-            "no_rows_selected": "Please select at least one item",
+            "no_rows_selected": "Please select an item",
             "no_fields_selected": "Please select at least one field",
-            "no_packages": "No dataset available in the selected group",
-            "no_json_resources": "No JSON resource available in the dataset",
+            "no_packages": "No datasets available in the selected group",
+            "no_json_resources": "No resources available in the dataset",
             "unknown": "Unexpected error"
         },
         "abort": {

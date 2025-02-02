@@ -1,25 +1,35 @@
-# custom_components/provbz_opendata/const.py
+"""
+Home Assistant Integration - OpenData South Tyrol (Provincia di Bolzano)
+https://github.com/dadaloop82/ha-opendata-bz
 
-"""Constants for the OpenData Provincia Bolzano integration."""
+This module contains all constants used throughout the OpenData South Tyrol integration.
+It provides configuration parameters, API endpoints, and translations for the integration.
+
+Author: Daniel Stimpfl (@dadaloop82)
+Version: 1.0.0
+License: MIT
+"""
+
 from typing import Final
 from homeassistant.const import Platform
 
+# Integration identifiers
 DOMAIN: Final = "opendata_provincia_bolzano"
 NAME: Final = "OpenData Provincia Bolzano"
 VERSION: Final = "1.0.0"
 
-# API
+# Base API endpoint for the OpenData South Tyrol platform
 BASE_API_URL: Final = "https://data.civis.bz.it/api/3/action"
 
-# Configuration
-CONF_GROUP_ID = "group_id"
-CONF_DATASET_ID = "dataset_id"
-CONF_PACKAGE_ID = "package_id"
-CONF_RESOURCE_ID = "resource_id"
-CONF_LANGUAGE = "language"
-CONF_SELECTED_FIELDS = "selected_fields"
+# Configuration keys used in configuration.yaml
+CONF_GROUP_ID = "group_id"          # Group identifier for data categorization
+CONF_DATASET_ID = "dataset_id"      # Dataset identifier within a group
+CONF_PACKAGE_ID = "package_id"      # Package identifier containing resources
+CONF_RESOURCE_ID = "resource_id"    # Specific resource identifier
+CONF_LANGUAGE = "language"          # Interface language selection
+CONF_SELECTED_FIELDS = "selected_fields"  # Fields to be imported from the dataset
 
-# Languages
+# Supported languages for the integration interface
 SUPPORTED_LANGUAGES = {
     "en": "English",
     "it": "Italiano",
@@ -27,27 +37,38 @@ SUPPORTED_LANGUAGES = {
     "rm": "Ladin"
 }
 
-# Defaults
-DEFAULT_LANGUAGE = "en"
-
-# Scan interval
-DEFAULT_SCAN_INTERVAL = 300  # 5 minutes
-
-# Icons
-DEFAULT_ICON = "mdi:database"
-
-PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
-
-WMS_MAP_DEFAULTS = {
-    "bbox_default": "10.4,46.2,12.5,47.1",  # Default bbox per Alto Adige
-    "width": 2048,
-    "height": 2048,
-    "feature_count": 100,
-    "scan_interval": 300,  # 5 minuti
+SUPPORTED_FORMATS = {
+    "CSV": "CSV",
+    "JSON": "JSON",
+    "WFS": "WFS",
+    "XLSX": "XLSX",
+    "XLS": "XLS"
 }
 
+# Default configuration values
+DEFAULT_LANGUAGE = "en"
+DEFAULT_SCAN_INTERVAL = 300  # Update interval in seconds (5 minutes)
+DEFAULT_ICON = "mdi:database"
+
+# Supported Home Assistant platforms for this integration
+PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.DEVICE_TRACKER]
+
+# WMS (Web Map Service) default configuration
+WMS_MAP_DEFAULTS = {
+    "bbox_default": "10.4,46.2,12.5,47.1",  # Bounding box for South Tyrol region
+    "width": 2048,                          # Map width in pixels
+    "height": 2048,                         # Map height in pixels
+    "feature_count": 100,                   # Maximum features to return
+    "scan_interval": 300,                   # Update interval in seconds (5 minutes)
+}
+
+XLSX_SUPPORTED_FORMATS = ["XLSX", "XLS"]
+DEFAULT_XLSX_SCAN_INTERVAL = 3600  # 1 ora
+
+# Multilingual translations for data groups
+# These translations are used to provide user-friendly names for data categories
 GROUP_TRANSLATIONS = {
-    "it": {
+    "it": {  # Italian translations
         "boundaries": "Confini",
         "climatologymeteorologyatmosphere": "Climatologia, Meteorologia e Atmosfera",
         "culture": "Cultura",
@@ -66,7 +87,7 @@ GROUP_TRANSLATIONS = {
         "weather": "Meteo",
         "welfare": "Welfare"
     },
-    "de": {
+    "de": {  # German translations
         "boundaries": "Grenzen",
         "climatologymeteorologyatmosphere": "Klimatologie, Meteorologie und Atmosphäre",
         "culture": "Kultur",
@@ -85,7 +106,7 @@ GROUP_TRANSLATIONS = {
         "weather": "Wetter",
         "welfare": "Wohlfahrt"
     },
-    "en": {
+    "en": {  # English translations
         "boundaries": "Boundaries",
         "climatologymeteorologyatmosphere": "Climatology, Meteorology and Atmosphere",
         "culture": "Culture",

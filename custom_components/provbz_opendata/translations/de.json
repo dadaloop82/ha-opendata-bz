@@ -2,14 +2,14 @@
     "config": {
         "step": {
             "user": {
-                "title": "OpenData Provinz Bozen",
-                "description": "Diese Integration verwendet die offenen Daten, die von der Autonomen Provinz Bozen über das Open Data Hub Portal bereitgestellt werden.\n\nDie Daten werden unter der CC0 1.0 Universal-Lizenz veröffentlicht, die es ermöglicht:\n- Die Arbeit zu kopieren, zu modifizieren, zu verbreiten und auszuführen\n- Die Daten für kommerzielle Zwecke zu nutzen\n- All dies ohne um Erlaubnis zu fragen\n\nWeitere Informationen: data.civis.bz.it/de/info\n\nGeben Sie bitte einen Namen für diese Integration ein:",
+                "title": "OpenData Südtirol",
+                "description": "Diese Integration verwendet offene Daten, die von der Autonomen Provinz Bozen/Südtirol über das Open Data Hub Portal bereitgestellt werden.\n\nDie Daten werden unter der CC0 1.0 Universal-Lizenz veröffentlicht, die es Ihnen erlaubt:\n- Das Werk zu kopieren, zu modifizieren, zu verteilen und auszuführen\n- Die Daten für kommerzielle Zwecke zu nutzen\n- Dies alles ohne um Erlaubnis zu fragen\n\nFür weitere Informationen: data.civis.bz.it/de/info\n\nGeben Sie zum Beginnen einen Namen für diese Integration ein:",
                 "data": {
-                    "name": "Integrationsname"
+                    "name": "Name der Integration"
                 }
             },
             "language": {
-                "title": "Sprache auswählen",
+                "title": "Sprachauswahl",
                 "description": "Wählen Sie die Sprache für die Daten. Diese Auswahl beeinflusst die Sprache der Beschreibungen und Inhalte, die von der API bereitgestellt werden.",
                 "data": {
                     "language": "Sprache"
@@ -17,54 +17,54 @@
             },
             "group": {
                 "title": "Gruppe auswählen",
-                "description": "Die Daten sind in thematische Gruppen gegliedert. Wählen Sie die Gruppe, die Sie überwachen möchten. Diese Auswahl bestimmt, welche Datensätze im nächsten Schritt verfügbar sind.",
+                "description": "Die Daten sind in thematische Gruppen organisiert. Wählen Sie die Datengruppe aus, die Sie überwachen möchten. Diese Auswahl bestimmt, welche Datensätze im nächsten Schritt verfügbar sind.",
                 "data": {
                     "group_id": "Gruppe"
                 }
             },
             "package": {
                 "title": "Datensatz auswählen",
-                "description": "Wählen Sie den spezifischen Datensatz, den Sie innerhalb der ausgewählten Gruppe überwachen möchten. Jeder Datensatz enthält Daten, die einem bestimmten Thema zugeordnet sind.\n\nAktuelle API-URL: {api_url}",
+                "description": "Wählen Sie den spezifischen Datensatz aus, den Sie innerhalb der ausgewählten Gruppe überwachen möchten. Jeder Datensatz enthält Daten zu einem bestimmten Thema.\n\nAktuelle API-URL: {api_url}",
                 "data": {
                     "package_id": "Datensatz"
                 }
             },
             "resource": {
                 "title": "Ressource auswählen",
-                "description": "Wählen Sie die JSON-Ressource aus, die Sie überwachen möchten. Ressourcen sind die eigentlichen Datenquellen innerhalb des ausgewählten Datensatzes.\n\nAktuelle API-URL: {api_url}",
+                "description": "Wählen Sie die Ressource (JSON, WFS oder XLSX) aus, die Sie überwachen möchten. Ressourcen sind die tatsächlichen Datenquellen innerhalb des ausgewählten Datensatzes.\n\nAktuelle API-URL: {api_url}",
                 "data": {
                     "resource_id": "Ressource"
                 }
             },
             "rows": {
-                "title": "Elemente auswählen",
-                "description": "Wählen Sie die spezifischen Elemente aus, die Sie überwachen möchten. Sie können mehrere Elemente gleichzeitig über die Kontrollkästchen auswählen.\n\nAktuelle API-URL: {api_url}",
+                "title": "Element auswählen",
+                "description": "Wählen Sie aus der Liste das spezifische Element aus, das Sie überwachen möchten.\n\nAktuelle API-URL: {api_url}",
                 "data": {
-                    "rows": "Verfügbare Elemente"
+                    "row": "Verfügbares Element"
                 }
             },
             "fields": {
                 "title": "Felder auswählen",
-                "description": "Wählen Sie für die ausgewählten Elemente die spezifischen Felder aus, die Sie überwachen möchten. Diese Felder werden zu Sensoren in Home Assistant.\n\nAktuelle API-URL: {api_url}",
+                "description": "Wählen Sie für das ausgewählte Element die spezifischen Felder aus, die Sie überwachen möchten. Diese Felder werden zu Sensoren in Home Assistant.\n\nAktuelle API-URL: {api_url}",
                 "data": {
                     "fields": "Verfügbare Felder"
                 }
             },
             "confirm": {
                 "title": "Konfiguration bestätigen",
-                "description": "Überprüfen Sie Ihre Auswahl. Home Assistant erstellt Sensoren für jedes ausgewählte Feld jedes gewählten Elements.\n\nKonfigurationsdetails:\n\n{fields_preview}\n\nEndgültige API-URL: {api_url}\n\nMöchten Sie mit dieser Konfiguration fortfahren?",
-                "data": {}
+                "description": "Überprüfen Sie Ihre Auswahl. Home Assistant wird für jedes ausgewählte Feld des gewählten Elements Sensoren erstellen.\n\nFolgende Entitäten werden erstellt:\n{fields_preview}\n\nEndgültige API-URL: {api_url}\n\nMöchten Sie mit dieser Konfiguration fortfahren?"
             }
         },
         "error": {
-            "cannot_connect": "Verbindung zur API fehlgeschlagen",
+            "cannot_connect": "Verbindung zur API nicht möglich",
             "invalid_auth": "Ungültige Authentifizierung",
+            "invalid_xlsx": "Die XLSX-Datei kann nicht gelesen werden oder ist ungültig",
             "no_fields_available": "Keine Felder in den Daten verfügbar",
             "no_rows_available": "Keine Elemente in den Daten verfügbar",
-            "no_rows_selected": "Bitte wählen Sie mindestens ein Element aus",
+            "no_rows_selected": "Bitte wählen Sie ein Element aus",
             "no_fields_selected": "Bitte wählen Sie mindestens ein Feld aus",
-            "no_packages": "Kein Datensatz in der ausgewählten Gruppe verfügbar",
-            "no_json_resources": "Keine JSON-Ressource im Datensatz verfügbar",
+            "no_packages": "Keine Datensätze in der ausgewählten Gruppe verfügbar",
+            "no_json_resources": "Keine Ressourcen im Datensatz verfügbar",
             "unknown": "Unerwarteter Fehler"
         },
         "abort": {

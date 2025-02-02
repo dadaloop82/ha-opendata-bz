@@ -31,21 +31,21 @@
             },
             "resource": {
                 "title": "Seleziona Risorsa",
-                "description": "Seleziona la risorsa JSON che vuoi monitorare. Le risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nURL API corrente: {api_url}",
+                "description": "Seleziona la risorsa (JSON, WFS o XLSX) che vuoi monitorare. Le risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nURL API corrente: {api_url}",
                 "data": {
                     "resource_id": "Risorsa"
                 }
             },
             "rows": {
-                "title": "Seleziona Elementi",
-                "description": "Seleziona gli elementi specifici che desideri monitorare. Puoi selezionare più elementi contemporaneamente utilizzando i checkbox.\n\nURL API corrente: {api_url}",
+                "title": "Seleziona Elemento",
+                "description": "Seleziona dalla lista l'elemento specifico che desideri monitorare.\n\nURL API corrente: {api_url}",
                 "data": {
-                    "rows": "Elementi Disponibili"
+                    "row": "Elemento Disponibile"
                 }
             },
             "fields": {
                 "title": "Seleziona Campi",
-                "description": "Per gli elementi selezionati, scegli quali campi specifici vuoi monitorare. Questi campi diventeranno sensori in Home Assistant.\n\nURL API corrente: {api_url}",
+                "description": "Per l'elemento selezionato, scegli quali campi specifici vuoi monitorare. Questi campi diventeranno sensori in Home Assistant.\n\nURL API corrente: {api_url}",
                 "data": {
                     "fields": "Campi Disponibili"
                 }
@@ -58,12 +58,13 @@
         "error": {
             "cannot_connect": "Impossibile connettersi all'API",
             "invalid_auth": "Autenticazione non valida",
+            "invalid_xlsx": "Il file XLSX non può essere letto o non è valido",
             "no_fields_available": "Nessun campo disponibile nei dati",
             "no_rows_available": "Nessun elemento disponibile nei dati",
-            "no_rows_selected": "Seleziona almeno un elemento",
+            "no_rows_selected": "Seleziona un elemento",
             "no_fields_selected": "Seleziona almeno un campo",
             "no_packages": "Nessun dataset disponibile nel gruppo selezionato",
-            "no_json_resources": "Nessuna risorsa JSON disponibile nel dataset",
+            "no_json_resources": "Nessuna risorsa disponibile nel dataset",
             "unknown": "Errore inaspettato"
         },
         "abort": {
