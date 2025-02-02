@@ -8,7 +8,6 @@ Home Assistant instance.
 Project: ha-opendata-bz
 Author: Daniel Stimpfl (@dadaloop82)
 License: Apache License 2.0
-Version: 1.0.0
 """
 from __future__ import annotations
 

@@ -8,7 +8,6 @@ requests and data parsing.
 Project: ha-opendata-bz
 Author: Daniel Stimpfl (@dadaloop82)
 License: Apache License 2.0
-Version: 1.0.0
 """
 from __future__ import annotations
 
@@ -177,6 +176,11 @@ class OpenDataBolzanoApiClient:
                     response.raise_for_status()
 
                     content_type = response.headers.get('Content-Type', '')
+
+                    if 'excel' in content_type or 'xls' in content_type:
+                        _LOGGER.debug("Excel file detected, skipping JSON parsing")
+                        return {"rows": []}
+
                     if 'xml' in content_type.lower():
                         _LOGGER.debug("XML response detected, parsing as WFS")
                         # Convert WFS to JSON request
@@ -243,6 +247,39 @@ class OpenDataBolzanoApiClient:
         except Exception as err:
             _LOGGER.error("Error getting WFS features: %s", err)
             return []
+
+    async def get_resource_binary(self, url: str) -> bytes:
+        """Get binary data from a resource URL.
+
+        Args:
+            url: Resource URL to fetch data from
+
+        Returns:
+            Binary data as bytes
+
+        Raises:
+            CannotConnect: If fetching resource data fails
+        """
+        try:
+            # Timeout più lungo per file grandi
+            async with async_timeout.timeout(30):
+                _LOGGER.debug("Fetching binary data from URL: %s", url)
+                async with self._session.get(url) as response:
+                    response.raise_for_status()
+                    data = await response.read()
+                    _LOGGER.debug(
+                        "Binary data retrieved successfully, size: %d bytes", len(data))
+                    return data
+
+        except aiohttp.ClientError as err:
+            _LOGGER.error("Error fetching binary data: %s", err)
+            raise CannotConnect from err
+        except asyncio.TimeoutError as err:
+            _LOGGER.error("Timeout fetching binary data: %s", err)
+            raise CannotConnect from err
+        except Exception as err:
+            _LOGGER.error("Unexpected error fetching binary data: %s", err)
+            raise CannotConnect from err
 
     async def get_feature_info(self, wms_url: str, layer_name: str, bbox: str) -> list:
         """Get feature information from a WMS service.

@@ -6,8 +6,7 @@ This module contains all constants used throughout the OpenData South Tyrol inte
 It provides configuration parameters, API endpoints, and translations for the integration.
 
 Author: Daniel Stimpfl (@dadaloop82)
-Version: 1.0.0
-License: MIT
+License: Apache License 2.0
 """
 
 from typing import Final
@@ -38,7 +37,6 @@ SUPPORTED_LANGUAGES = {
 }
 
 SUPPORTED_FORMATS = {
-    "CSV": "CSV",
     "JSON": "JSON",
     "WFS": "WFS",
     "XLSX": "XLSX",

@@ -8,7 +8,6 @@ data sources and sensors in Home Assistant.
 Project: ha-opendata-bz (https://github.com/dadaloop82/ha-opendata-bz)
 Author: Daniel Stimpfl (@dadaloop82)
 License: Apache License 2.0
-Version: 1.0.0
 """
 from __future__ import annotations
 
@@ -19,6 +18,8 @@ import voluptuous as vol
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 import pandas as pd
 import io
+import os
+import json
 
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
@@ -37,6 +38,8 @@ from .const import (
     BASE_API_URL,
 )
 from .api import OpenDataBolzanoApiClient, CannotConnect
+
+from .const import SUPPORTED_FORMATS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -127,19 +130,32 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         return await self.async_step_language()
 
     async def async_step_language(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle language selection step.
-
-        Allows user to select interface language for the integration.
-        """
+        """Handle language selection step."""
         if user_input is not None:
             self._config.update(user_input)
             return await self.async_step_group()
+
+        supported_types = ", ".join(SUPPORTED_FORMATS.values())
+
+        try:
+            manifest_path = os.path.join(
+                os.path.dirname(__file__), "manifest.json")
+            with open(manifest_path) as manifest_file:
+                manifest = json.load(manifest_file)
+                version = manifest.get("version", "?.?.?")
+        except Exception as err:
+            _LOGGER.error("Error reading manifest version: %s", err)
+            version = "?.?.?"
 
         return self.async_show_form(
             step_id="language",
             data_schema=vol.Schema({
                 vol.Required(CONF_LANGUAGE): vol.In(SUPPORTED_LANGUAGES)
-            })
+            }),
+            description_placeholders={
+                "supported_types": supported_types,
+                "version": version
+            }
         )
 
     async def async_step_group(self, user_input: dict[str, Any] | None = None) -> FlowResult:
@@ -324,15 +340,11 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                                 # Store preview data
                                 self._rows_data = df.to_dict('records')
 
-                                # Store column information
+                                # Store column information for later
                                 self._config["xlsx_columns"] = list(df.columns)
 
-                                # Create selected fields format
-                                self._config["selected_fields"] = [
-                                    ("field", col) for col in df.columns
-                                ]
-
-                                return await self.async_step_confirm()
+                                # Instead of going directly to confirm, go to rows selection
+                                return await self.async_step_rows()
 
                             except Exception as err:
                                 _LOGGER.error(
@@ -364,75 +376,94 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         )
 
     async def async_step_rows(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle row selection step for JSON resources.
-
-        Allows selection of specific data rows from JSON resources.
-        """
+        """Handle row selection step for both JSON and Excel resources."""
         errors = {}
         row_names = {}
 
         try:
-            client = OpenDataBolzanoApiClient(self.hass)
-            resource = next(
-                (r for r in self._resources if r["id"]
-                 == self._config[CONF_RESOURCE_ID]),
-                None
-            )
+            if self._config.get("resource_format") in ["XLSX", "XLS"]:
+                # Excel handling
+                for idx, row in enumerate(self._rows_data):
+                    # Create a preview of row data
+                    preview_values = []
+                    for col in self._config["xlsx_columns"]:
+                        val = row.get(col, "")
+                        preview_values.append(f"{col}: {val}")
+                    preview = " | ".join(preview_values)
+                    row_names[f"row_{idx}"] = f"Riga {idx + 1} - {preview}"
 
-            if resource and resource.get("url"):
-                # Prepare URL with language parameter
-                parsed = urlparse(resource["url"])
-                query = parse_qs(parsed.query)
-                query.pop("lang", None)
-                lang = self._config.get(CONF_LANGUAGE, "en").lower()
-                query["lang"] = [lang]
-                new_query = urlencode(query, doseq=True)
-                new_url = urlunparse((
-                    parsed.scheme,
-                    parsed.netloc,
-                    parsed.path,
-                    parsed.params,
-                    new_query,
-                    parsed.fragment
-                ))
-
-                # Fetch and process data
-                json_data = await client.get_resource_data(new_url)
-                if isinstance(json_data, dict) and "rows" in json_data:
-                    self._rows_data = json_data["rows"]
-                elif isinstance(json_data, list):
-                    self._rows_data = json_data
-                else:
-                    self._rows_data = []
-
-                # Prepare row options
-                row_names = {
-                    (row.get("name") or f"row_{idx}"): (row.get("name") or f"row_{idx}")
-                    for idx, row in enumerate(self._rows_data)
-                }
-
-                # Handle user selection
                 if user_input is not None:
                     selected_row = user_input.get("row")
                     if selected_row:
-                        selected_index = next(
-                            (idx for idx, row in enumerate(self._rows_data)
-                             if (row.get("name") or f"row_{idx}") == selected_row),
-                            None
-                        )
-                        if selected_index is not None:
-                            self._config["selected_rows"] = [selected_index]
-                            return await self.async_step_fields()
-                        else:
-                            errors["base"] = "no_rows_selected"
+                        selected_index = int(selected_row.split("_")[1])
+                        self._config["selected_rows"] = [selected_index]
+                        return await self.async_step_fields()
                     else:
                         errors["base"] = "no_rows_selected"
+            else:
+                client = OpenDataBolzanoApiClient(self.hass)
+                resource = next(
+                    (r for r in self._resources if r["id"]
+                     == self._config[CONF_RESOURCE_ID]),
+                    None
+                )
+
+                if resource and resource.get("url"):
+                    # Prepare URL with language parameter
+                    parsed = urlparse(resource["url"])
+                    query = parse_qs(parsed.query)
+                    query.pop("lang", None)
+                    lang = self._config.get(CONF_LANGUAGE, "en").lower()
+                    query["lang"] = [lang]
+                    new_query = urlencode(query, doseq=True)
+                    new_url = urlunparse((
+                        parsed.scheme,
+                        parsed.netloc,
+                        parsed.path,
+                        parsed.params,
+                        new_query,
+                        parsed.fragment
+                    ))
+
+                    # Fetch and process data
+                    json_data = await client.get_resource_data(new_url)
+                    if isinstance(json_data, dict) and "rows" in json_data:
+                        self._rows_data = json_data["rows"]
+                    elif isinstance(json_data, list):
+                        self._rows_data = json_data
+                    else:
+                        self._rows_data = []
+
+                    # Prepare row options
+                    row_names = {
+                        (row.get("name") or f"row_{idx}"): (row.get("name") or f"row_{idx}")
+                        for idx, row in enumerate(self._rows_data)
+                    }
+
+                    # Handle user selection
+                    if user_input is not None:
+                        selected_row = user_input.get("row")
+                        if selected_row:
+                            selected_index = next(
+                                (idx for idx, row in enumerate(self._rows_data)
+                                 if (row.get("name") or f"row_{idx}") == selected_row),
+                                None
+                            )
+                            if selected_index is not None:
+                                self._config["selected_rows"] = [
+                                    selected_index]
+                                return await self.async_step_fields()
+                            else:
+                                errors["base"] = "no_rows_selected"
+                        else:
+                            errors["base"] = "no_rows_selected"
 
         except CannotConnect:
             _LOGGER.exception("Connection failed")
             errors["base"] = "cannot_connect"
         except Exception as error:
-            _LOGGER.exception("Unexpected exception in rows step: %s", error)
+            _LOGGER.exception(
+                "Unexpected exception in rows step: %s", error)
             errors["base"] = "unknown"
 
         return self.async_show_form(
@@ -446,68 +477,94 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         )
 
     async def async_step_fields(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle field selection step for JSON resources.
-
-        Allows selection of specific data fields from chosen row.
-        Handles both regular fields and measurement fields.
-        """
+        """Handle field selection step for both JSON and Excel resources."""
         errors = {}
         options = []
 
         try:
-            # Get the first row or selected row
-            if "selected_rows" not in self._config or not self._config["selected_rows"]:
-                first_row = self._rows_data[0]
-            else:
-                first_row = self._rows_data[self._config["selected_rows"][0]]
+            if self._config.get("resource_format") in ["XLSX", "XLS"]:
+                # Excel handling
+                selected_row = self._rows_data[self._config["selected_rows"][0]]
 
-            processed_fields = set()
-
-            # Process measurement fields if available
-            measurements = first_row.get("measurements", [])
-            if isinstance(measurements, list):
-                for measurement in measurements:
-                    if "description" in measurement and "code" in measurement:
-                        code = measurement["code"].lower()
-                        description = measurement["description"]
-                        value = first_row.get(code, "N/A")
-
-                        label = (f"{code} ({description}): {value}"
-                                 if value != "N/A"
-                                 else f"{code}: {value}")
-
-                        options.append({
-                            "value": f"measurement:{code}",
-                            "label": label
-                        })
-                        processed_fields.add(code)
-
-            # Process regular fields not already handled as measurements
-            for field_name, field_value in first_row.items():
-                if (field_name != "measurements" and
-                        field_name.lower() not in processed_fields):
+                # Create options for each column with its value
+                for column in self._config["xlsx_columns"]:
+                    value = selected_row.get(column, "N/A")
                     options.append({
-                        "value": f"field:{field_name}",
-                        "label": f"{field_name}: {field_value}"
+                        "value": f"field:{column}",
+                        "label": f"{column}: {value}"
                     })
 
-            # Handle user selection
-            if user_input is not None:
-                selected = user_input.get("fields", [])
-                selected_fields = []
+                # Handle user selection
+                if user_input is not None:
+                    selected = user_input.get("fields", [])
+                    selected_fields = []
 
-                for item in selected:
-                    try:
-                        field_type, key = item.split(":", 1)
-                        selected_fields.append((field_type, key))
-                    except Exception:
-                        pass
+                    for item in selected:
+                        try:
+                            field_type, key = item.split(":", 1)
+                            selected_fields.append((field_type, key))
+                        except Exception:
+                            pass
 
-                if selected_fields:
-                    self._config["selected_fields"] = selected_fields
-                    return await self.async_step_confirm()
+                    if selected_fields:
+                        self._config["selected_fields"] = selected_fields
+                        return await self.async_step_confirm()
+                    else:
+                        errors["base"] = "no_fields_selected"
+            else:
+                # Get the first row or selected row
+                if "selected_rows" not in self._config or not self._config["selected_rows"]:
+                    first_row = self._rows_data[0]
                 else:
-                    errors["base"] = "no_fields_selected"
+                    first_row = self._rows_data[self._config["selected_rows"][0]]
+
+                processed_fields = set()
+
+                # Process measurement fields if available
+                measurements = first_row.get("measurements", [])
+                if isinstance(measurements, list):
+                    for measurement in measurements:
+                        if "description" in measurement and "code" in measurement:
+                            code = measurement["code"].lower()
+                            description = measurement["description"]
+                            value = first_row.get(code, "N/A")
+
+                            label = (f"{code} ({description}): {value}"
+                                     if value != "N/A"
+                                     else f"{code}: {value}")
+
+                            options.append({
+                                "value": f"measurement:{code}",
+                                "label": label
+                            })
+                            processed_fields.add(code)
+
+                # Process regular fields not already handled as measurements
+                for field_name, field_value in first_row.items():
+                    if (field_name != "measurements" and
+                            field_name.lower() not in processed_fields):
+                        options.append({
+                            "value": f"field:{field_name}",
+                            "label": f"{field_name}: {field_value}"
+                        })
+
+                # Handle user selection
+                if user_input is not None:
+                    selected = user_input.get("fields", [])
+                    selected_fields = []
+
+                    for item in selected:
+                        try:
+                            field_type, key = item.split(":", 1)
+                            selected_fields.append((field_type, key))
+                        except Exception:
+                            pass
+
+                    if selected_fields:
+                        self._config["selected_fields"] = selected_fields
+                        return await self.async_step_confirm()
+                    else:
+                        errors["base"] = "no_fields_selected"
 
         except Exception as error:
             _LOGGER.exception("Unexpected exception in fields step: %s", error)
@@ -569,9 +626,23 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         if self._config.get("resource_format", "").upper() == "WFS":
             preview_text = "WFS layer trackers will be created."
         elif self._config.get("resource_format", "").upper() in ["XLSX", "XLS"]:
-            preview_text = "The following columns will be created as sensors:\n"
-            preview_text += "\n".join(
-                f"- {col}" for col in self._config.get("xlsx_columns", []))
+            try:
+                selected_row = self._rows_data[self._config["selected_rows"][0]]
+                selected_fields = self._config["selected_fields"]
+                
+                preview_text = "The following sensors will be created:\n"
+                # Per ogni campo selezionato
+                for field_type, column in selected_fields:
+                    # Ottieni il valore della colonna per la riga selezionata
+                    value = selected_row.get(column, "N/A")
+                    # Crea un nome pulito per il sensore
+                    clean_row_name = re.sub(r'[^a-z0-9_]+', '_', str(selected_row.get(list(selected_row.keys())[0], '')).lower().strip())
+                    clean_column = re.sub(r'[^a-z0-9_]+', '_', column.lower().strip())
+                    entity_id = f"sensor.provbz_{clean_row_name}_{clean_column}"
+                    preview_text += f"- {entity_id}: {value}\n"
+            except Exception as err:
+                _LOGGER.error("Error creating preview: %s", err)
+                preview_text = "Error creating preview"
         else:
             # Generate preview for JSON sensors
             sensor_previews = []

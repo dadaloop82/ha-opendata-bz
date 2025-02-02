@@ -7,8 +7,7 @@ It creates sensor entities based on the data retrieved from the OpenData API,
 supporting regular fields, measurement-type data, and XLSX files.
 
 Author: Daniel Stimpfl (@dadaloop82)
-Version: 1.1.0
-License: MIT
+License: Apache License 2.0
 """
 
 from __future__ import annotations

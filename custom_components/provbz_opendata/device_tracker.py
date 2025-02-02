@@ -7,8 +7,7 @@ OpenData South Tyrol API. It creates tracker entities for geographic features,
 making them available on Home Assistant maps.
 
 Author: Daniel Stimpfl (@dadaloop82)
-Version: 1.0.0
-License: MIT
+License: Apache License 2.0
 """
 
 from __future__ import annotations

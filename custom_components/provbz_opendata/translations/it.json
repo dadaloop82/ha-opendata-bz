@@ -1,74 +1,74 @@
 {
     "config": {
-        "step": {
-            "user": {
-                "title": "OpenData Provincia di Bolzano",
-                "description": "Questa integrazione utilizza i dati aperti (Open Data) forniti dalla Provincia Autonoma di Bolzano attraverso il portale Open Data Hub.\n\nI dati sono rilasciati sotto licenza CC0 1.0 Universal che permette di:\n- Copiare, modificare, distribuire ed eseguire il lavoro\n- Utilizzare i dati per scopi commerciali\n- Il tutto senza chiedere alcun permesso\n\nPer maggiori informazioni: data.civis.bz.it/it/info\n\nPer iniziare, inserisci un nome per questa integrazione:",
-                "data": {
-                    "name": "Nome dell'integrazione"
-                }
-            },
-            "language": {
-                "title": "Selezione Lingua",
-                "description": "Seleziona la lingua per i dati. Questa scelta influenzerà la lingua delle descrizioni e dei contenuti forniti dall'API.",
-                "data": {
-                    "language": "Lingua"
-                }
-            },
-            "group": {
-                "title": "Seleziona Gruppo",
-                "description": "I dati sono organizzati in gruppi tematici. Seleziona il gruppo di dati che ti interessa monitorare. Questa scelta determinerà quali dataset saranno disponibili nel prossimo passaggio.",
-                "data": {
-                    "group_id": "Gruppo"
-                }
-            },
-            "package": {
-                "title": "Seleziona Dataset",
-                "description": "Scegli il dataset specifico da monitorare all'interno del gruppo selezionato. Ogni dataset contiene dati correlati a un tema specifico.\n\nURL API corrente: {api_url}",
-                "data": {
-                    "package_id": "Dataset"
-                }
-            },
-            "resource": {
-                "title": "Seleziona Risorsa",
-                "description": "Seleziona la risorsa (JSON, WFS o XLSX) che vuoi monitorare. Le risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nURL API corrente: {api_url}",
-                "data": {
-                    "resource_id": "Risorsa"
-                }
-            },
-            "rows": {
-                "title": "Seleziona Elemento",
-                "description": "Seleziona dalla lista l'elemento specifico che desideri monitorare.\n\nURL API corrente: {api_url}",
-                "data": {
-                    "row": "Elemento Disponibile"
-                }
-            },
-            "fields": {
-                "title": "Seleziona Campi",
-                "description": "Per l'elemento selezionato, scegli quali campi specifici vuoi monitorare. Questi campi diventeranno sensori in Home Assistant.\n\nURL API corrente: {api_url}",
-                "data": {
-                    "fields": "Campi Disponibili"
-                }
-            },
-            "confirm": {
-                "title": "Conferma Configurazione",
-                "description": "Verifica le tue selezioni. Home Assistant creerà sensori per ogni campo selezionato di ogni elemento scelto.\n\nCreerò le seguenti entità:\n{fields_preview}\n\nURL API finale: {api_url}\n\nVuoi procedere con questa configurazione?"
-            }
+      "step": {
+        "user": {
+          "title": "OpenData Provincia di Bolzano",
+          "description": "Questa integrazione utilizza dati forniti da [Open Data Alto Adige](https://data.civis.bz.it/dataset) con licenza Creative Commons CC0 1.0 Universale - Public Domain Dedication (CC0 1.0). Non tutti i tipi di dati disponibili sono supportati da questa integrazione.\n\nTipologie di dati supportate: {supported_types}\n\nVersione dell'integrazione: {version}.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+          "data": {
+            "name": "Nome dell'integrazione"
+          }
         },
-        "error": {
-            "cannot_connect": "Impossibile connettersi all'API",
-            "invalid_auth": "Autenticazione non valida",
-            "invalid_xlsx": "Il file XLSX non può essere letto o non è valido",
-            "no_fields_available": "Nessun campo disponibile nei dati",
-            "no_rows_available": "Nessun elemento disponibile nei dati",
-            "no_rows_selected": "Seleziona un elemento",
-            "no_fields_selected": "Seleziona almeno un campo",
-            "no_packages": "Nessun dataset disponibile nel gruppo selezionato",
-            "no_json_resources": "Nessuna risorsa disponibile nel dataset",
-            "unknown": "Errore inaspettato"
+        "language": {
+          "title": "Selezione Lingua",
+          "description": "Benvenuto nell'integrazione OpenData Alto Adige!\n\nQuesta integrazione utilizza dati forniti da [Open Data Alto Adige](https://data.civis.bz.it/dataset) con licenza Creative Commons CC0 1.0 Universale - Public Domain Dedication (CC0 1.0).\n\nI tipi di dati supportati sono: {supported_types}.\n\nSeleziona la lingua dei dati e procedi con la configurazione.\n\nVersione: {version}\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+          "data": {
+            "language": "Lingua"
+          }
         },
-        "abort": {
-            "already_configured": "Questa integrazione è già configurata"
+        "group": {
+          "title": "Seleziona Gruppo",
+          "description": "I dati sono organizzati in gruppi tematici. Seleziona il gruppo di dati che ti interessa monitorare. Questa scelta determinerà quali dataset saranno disponibili nel prossimo passaggio.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+          "data": {
+            "group_id": "Gruppo"
+          }
+        },
+        "package": {
+          "title": "Seleziona Dataset",
+          "description": "Scegli il dataset specifico da monitorare all'interno del gruppo selezionato. Ogni dataset contiene dati correlati a un tema specifico.\n\nURL API corrente: {api_url}\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+          "data": {
+            "package_id": "Dataset"
+          }
+        },
+        "resource": {
+          "title": "Seleziona Risorsa",
+          "description": "Seleziona la risorsa JSON che vuoi monitorare. Le risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nURL API corrente: {api_url}\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+          "data": {
+            "resource_id": "Risorsa"
+          }
+        },
+        "rows": {
+          "title": "Seleziona Elementi",
+          "description": "Seleziona gli elementi specifici che desideri monitorare. Puoi selezionare più elementi contemporaneamente utilizzando i checkbox.\n\nURL API corrente: {api_url}\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+          "data": {
+            "rows": "Elementi Disponibili"
+          }
+        },
+        "fields": {
+          "title": "Seleziona Campi",
+          "description": "Per gli elementi selezionati, scegli quali campi specifici vuoi monitorare. Questi campi diventeranno sensori in Home Assistant.\n\nURL API corrente: {api_url}\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+          "data": {
+            "fields": "Campi Disponibili"
+          }
+        },
+        "confirm": {
+          "title": "Conferma Configurazione",
+          "description": "Verifica le tue selezioni. Home Assistant creerà sensori per ogni campo selezionato di ogni elemento scelto.\n\nCreerò le seguenti entità:\n{fields_preview}\n\nURL API finale: {api_url}\n\nVuoi procedere con questa configurazione?"
         }
+      },
+      "error": {
+        "cannot_connect": "Impossibile connettersi all'API",
+        "invalid_auth": "Autenticazione non valida",
+        "no_fields_available": "Nessun campo disponibile nei dati",
+        "no_rows_available": "Nessun elemento disponibile nei dati",
+        "no_rows_selected": "Seleziona almeno un elemento",
+        "no_fields_selected": "Seleziona almeno un campo",
+        "no_packages": "Nessun dataset disponibile nel gruppo selezionato",
+        "no_json_resources": "Nessuna risorsa JSON disponibile nel dataset",
+        "unknown": "Errore inaspettato"
+      },
+      "abort": {
+        "already_configured": "Questa integrazione è già configurata"
+      }
     }
-}
+  }
+  
