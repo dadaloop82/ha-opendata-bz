@@ -178,6 +178,8 @@ async def setup_xlsx_sensors(
     """Set up sensors for XLSX data sources."""
     api = entry_data["api"]
     config = entry_data["config"]
+    selected_row_idx = config["selected_rows"][0]  # Prendiamo l'indice della riga selezionata
+    selected_fields = config["selected_fields"]    # Prendiamo i campi selezionati
 
     async def async_update_xlsx_data():
         """Fetch data from XLSX file."""
@@ -212,21 +214,21 @@ async def setup_xlsx_sensors(
         return
 
     entities = []
-    for row_idx, row in enumerate(coordinator.data):
-        columns = list(row.keys())
-        base_name = str(row.get(columns[0], f"row_{row_idx}"))
-        
-        for column in columns[1:]:  # Skip first column as it's used for base_name
-            clean_column = re.sub(r'[^a-z0-9_]+', '_', column.lower().strip())
-            sensor = OpenDataXLSXSensor(
-                coordinator,
-                entry,
-                row_idx,
-                column,
-                base_name,
-                clean_column
-            )
-            entities.append(sensor)
+    row = coordinator.data[selected_row_idx]
+    base_name = str(row.get(list(row.keys())[0], f"row_{selected_row_idx}"))
+
+    # Creiamo solo i sensori per i campi selezionati
+    for field_type, column in selected_fields:
+        clean_column = re.sub(r'[^a-z0-9_]+', '_', column.lower().strip())
+        sensor = OpenDataXLSXSensor(
+            coordinator,
+            entry,
+            selected_row_idx,
+            column,
+            base_name,
+            clean_column
+        )
+        entities.append(sensor)
 
     if entities:
         _LOGGER.info(

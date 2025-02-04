@@ -1,73 +1,91 @@
 {
   "config": {
-    "step": {
-      "user": {
-        "title": "OpenData South Tyrol",
-        "description": "This integration uses data provided by [Open Data South Tyrol](https://data.civis.bz.it/dataset) under the Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) license. Not all available data types are supported by this integration.\n\nSupported data types: {supported_types}\n\nIntegration version: {version}.\n\nConfiguration data is retrieved in real-time from the provided API and loading may take a few seconds.",
-        "data": {
-          "name": "Integration name"
-        }
+      "step": {
+          "user": {
+              "title": "OpenData South Tyrol",
+              "description": "This integration uses data provided by [Open Data South Tyrol](https://data.civis.bz.it/dataset) under the Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) license. Not all available data types are supported by this integration.\n\nSupported data types: {supported_types}\n\nIntegration version: {version}.\n\nThe configuration data is retrieved in real-time from the provided API, and loading may take a few seconds.",
+              "data": {
+                  "name": "Integration Name"
+              }
+          },
+          "language": {
+              "title": "Language Selection",
+              "description": "Select the language of the data provided by the API.\nThis choice will affect the language of the content displayed during configuration and the retrieved data.\n\nVersion: {version}",
+              "data": {
+                  "language": "Data Language"
+              }
+          },
+          "group": {
+              "title": "Group Selection",
+              "description": "The data is organized into thematic groups.\nSelect the group that contains the data you are interested in.\nThis choice will determine which datasets will be available in the next step.",
+              "data": {
+                  "group_id": "Thematic Group"
+              }
+          },
+          "package": {
+              "title": "Dataset Selection",
+              "description": "Choose the specific dataset to monitor within the selected group.\nEach dataset contains data related to a specific theme.\n\nAPI URL: {api_url}",
+              "data": {
+                  "package_id": "Available Dataset"
+              }
+          },
+          "resource": {
+              "title": "Resource Selection",
+              "description": "Select the data resource to monitor.\nResources are the actual data sources within the selected dataset.\n\nAPI URL: {api_url}",
+              "data": {
+                  "resource_id": "Available Resource"
+              }
+          },
+          "rows": {
+              "title": "Row Selection",
+              "description": "Select the row of data to monitor.\nFor each row, the available values are displayed to facilitate selection.\n\nAPI URL: {api_url}",
+              "data": {
+                  "row": "Available Row"
+              }
+          },
+          "fields": {
+              "title": "Field Selection",
+              "description": "Select the field to monitor.\nThis value will become a sensor in Home Assistant.\nA preview of the current value is displayed for each field.\n\nAPI URL: {api_url}",
+              "data": {
+                  "fields": "Field to Monitor"
+              }
+          },
+          "confirm": {
+              "title": "Confirm Configuration",
+              "description": "Review your selection. Home Assistant will create the following sensor:\n\n{fields_preview}\n\nAPI URL: {api_url}\n\nDo you want to proceed with this configuration?"
+          }
       },
-      "language": {
-        "title": "Language Selection",
-        "description": "Welcome to the OpenData South Tyrol integration!\n\nThis integration allows you to access public data from the Autonomous Province of Bolzano through the Open Data Hub.\n\nSupported data types are: {supported_types}.\n\nSelect the data language and proceed with the configuration.\n\nVersion: {version}\n\nConfiguration data is retrieved in real-time from the provided API and loading may take a few seconds.",
-        "data": {
-          "language": "Language"
-        }
+      "error": {
+          "cannot_connect": "Unable to connect to the API",
+          "invalid_auth": "Invalid authentication",
+          "invalid_xlsx": "The Excel file cannot be read or is invalid",
+          "no_fields_available": "No fields available in the data",
+          "no_rows_available": "No items available in the data",
+          "no_rows_selected": "Select a row",
+          "no_fields_selected": "Select a field",
+          "no_packages": "No datasets available in the selected group",
+          "no_json_resources": "No resources available in the dataset",
+          "unknown": "Unexpected error"
       },
-      "group": {
-        "title": "Select Group",
-        "description": "The data are organized into thematic groups. Select the data group you wish to monitor. This choice will determine which datasets will be available in the next step.",
-        "data": {
-          "group_id": "Group"
-        }
+      "loading_errors": {
+          "default_groups": "Error loading groups",
+          "default_packages": "Error loading packages"
       },
-      "package": {
-        "title": "Select Dataset",
-        "description": "Choose the specific dataset to monitor within the selected group. Each dataset contains data related to a specific theme.\n\nCurrent API URL: {api_url}",
-        "data": {
-          "package_id": "Dataset"
-        }
+      "previews": {
+          "entity_value": "{entity_id} = {value}",
+          "sensor_preview": "{entity_id}: {value}"
       },
-      "resource": {
-        "title": "Select Resource",
-        "description": "Select the JSON resource you want to monitor. The resources are the actual data sources within the selected dataset.\n\nCurrent API URL: {api_url}",
-        "data": {
-          "resource_id": "Resource"
-        }
+      "resource_labels": {
+          "format": "[{format}] {name}",
+          "unavailable": "🚫 [{format}] {name}"
       },
-      "rows": {
-        "title": "Select Items",
-        "description": "Select the specific items you wish to monitor. You can select multiple items simultaneously using the checkboxes.\n\nCurrent API URL: {api_url}",
-        "data": {
-          "rows": "Available Items"
-        }
+      "excel": {
+          "column_value": "{column}: {value}",
+          "row_preview": "{number} | {preview}"
       },
-      "fields": {
-        "title": "Select Fields",
-        "description": "For the selected items, choose which specific fields you want to monitor. These fields will become sensors in Home Assistant.\n\nCurrent API URL: {api_url}",
-        "data": {
-          "fields": "Available Fields"
-        }
-      },
-      "confirm": {
-        "title": "Confirm Configuration",
-        "description": "Review your selections. Home Assistant will create sensors for each selected field of every chosen item.\n\nThe following entities will be created:\n{fields_preview}\n\nFinal API URL: {api_url}\n\nDo you want to proceed with this configuration?"
+      "abort": {
+          "already_configured": "This integration is already configured",
+          "unknown_step": "Unknown configuration step"
       }
-    },
-    "error": {
-      "cannot_connect": "Unable to connect to the API",
-      "invalid_auth": "Invalid authentication",
-      "no_fields_available": "No fields available in the data",
-      "no_rows_available": "No items available in the data",
-      "no_rows_selected": "Select at least one item",
-      "no_fields_selected": "Select at least one field",
-      "no_packages": "No dataset available in the selected group",
-      "no_json_resources": "No JSON resource available in the dataset",
-      "unknown": "Unexpected error"
-    },
-    "abort": {
-      "already_configured": "This integration is already configured"
-    }
   }
 }

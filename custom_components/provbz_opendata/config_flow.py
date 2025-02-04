@@ -75,6 +75,16 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         self._rows_data: list[dict[str, Any]] = []
         self._current_api_url: str = BASE_API_URL  # Current API endpoint
         self._current_step: int = 0                # Current step in the flow
+        self._translations: dict[str, Any] = {}
+
+    @property
+    def translations(self) -> dict[str, Any]:
+        """Get translations for current language."""
+        current_lang = self._config.get(CONF_LANGUAGE, "en")
+        if not self._translations.get(current_lang):
+            self._translations[current_lang] = self.hass.data[DOMAIN].get(
+                "translations", {}).get(current_lang, {})
+        return self._translations[current_lang]
 
     @property
     def _api_url(self) -> str:
@@ -198,7 +208,8 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
             step_id="group",
             data_schema=vol.Schema({
                 vol.Required(CONF_GROUP_ID): vol.In(
-                    groups or {"default": "Error loading groups"}
+                    groups or {"default": self.hass.data[DOMAIN].get(
+                        "loading_errors", {}).get("default_groups")}
                 )
             }),
             errors=errors
@@ -245,7 +256,8 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
             step_id="package",
             data_schema=vol.Schema({
                 vol.Required(CONF_PACKAGE_ID): vol.In(
-                    packages or {"default": "Error loading packages"}
+                    packages or {"default": self.hass.data[DOMAIN].get(
+                        "loading_errors", {}).get("default_packages")}
                 )
             }),
             errors=errors,
@@ -267,7 +279,8 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
             package_details = await client.get_package_details(package_id)
             self._resources = package_details.get("resources", [])
 
-            selectable_formats = set(SUPPORTED_FORMATS.values())
+            format_label = self.translations["labels"]["format"]
+            unavailable_label = self.translations["labels"]["unavailable"]
 
             for resource in self._resources:
                 resource_format = resource.get("format", "").upper()
@@ -276,12 +289,18 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                 if resource_format in selectable_formats:
                     options.append({
                         "value": resource["id"],
-                        "label": f"[{resource_format}] {clean_name}"
+                        "label": self.translations["step"]["resource"]["labels"]["format"].format(
+                            format=resource_format,
+                            name=clean_name
+                        )
                     })
                 else:
                     options.append({
                         "value": f"not_available_{resource['id']}",
-                        "label": f"🚫 [{resource_format}] {clean_name}"
+                        "label": self.translations["step"]["resource"]["labels"]["unavailable"].format(
+                            format=resource_format,
+                            name=clean_name
+                        )
                     })
 
             if user_input is not None:
@@ -382,15 +401,18 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
         try:
             if self._config.get("resource_format") in ["XLSX", "XLS"]:
-                # Excel handling
+                column_format = self.translations["step"]["rows"]["labels"]["column_value"]
+                row_format = self.translations["step"]["rows"]["labels"]["row_format"]
+
                 for idx, row in enumerate(self._rows_data):
-                    # Create a preview of row data
                     preview_values = []
                     for col in self._config["xlsx_columns"]:
                         val = row.get(col, "")
-                        preview_values.append(f"{col}: {val}")
+                        preview_values.append(
+                            column_format.format(column=col, value=val))
                     preview = " | ".join(preview_values)
-                    row_names[f"row_{idx}"] = f"Riga {idx + 1} - {preview}"
+                    row_names[f"row_{idx}"] = row_format.format(
+                        number=idx+1, preview=preview)
 
                 if user_input is not None:
                     selected_row = user_input.get("row")
@@ -466,13 +488,25 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                 "Unexpected exception in rows step: %s", error)
             errors["base"] = "unknown"
 
+        options = [
+            {"value": f"row_{idx}",
+             # Rimuoviamo il testo "Riga" hardcoded
+             "label": f"{row.get(list(row.keys())[0], '')} | {', '.join(f'{k}: {v}' for k,v in row.items())}"
+             } for idx, row in enumerate(self._rows_data)
+        ]
+
         return self.async_show_form(
             step_id="rows",
             data_schema=vol.Schema({
-                vol.Required("row"): vol.In(row_names)
+                vol.Required("row"): selector({
+                    "select": {
+                        "options": options,
+                        "mode": "list",
+                        "variant": "list"
+                    }
+                })
             }),
             errors=errors if errors else None,
-            last_step=False,
             description_placeholders={"api_url": self._api_url_link()}
         )
 
@@ -624,25 +658,31 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
         # Prepare preview based on resource type
         if self._config.get("resource_format", "").upper() == "WFS":
-            preview_text = "WFS layer trackers will be created."
+            preview_text = self.translations["step"]["confirm"]["previews"]["wfs"]
         elif self._config.get("resource_format", "").upper() in ["XLSX", "XLS"]:
             try:
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
                 selected_fields = self._config["selected_fields"]
-                
-                preview_text = "The following sensors will be created:\n"
-                # Per ogni campo selezionato
+                preview_format = self.translations["step"]["confirm"]["previews"]["entity"]
+
+                preview_text = []
+                base_name = str(selected_row.get(
+                    list(selected_row.keys())[0], ''))
+                clean_base_name = re.sub(
+                    r'[^a-z0-9_]+', '_', base_name.lower().strip())
+
                 for field_type, column in selected_fields:
-                    # Ottieni il valore della colonna per la riga selezionata
                     value = selected_row.get(column, "N/A")
-                    # Crea un nome pulito per il sensore
-                    clean_row_name = re.sub(r'[^a-z0-9_]+', '_', str(selected_row.get(list(selected_row.keys())[0], '')).lower().strip())
-                    clean_column = re.sub(r'[^a-z0-9_]+', '_', column.lower().strip())
-                    entity_id = f"sensor.provbz_{clean_row_name}_{clean_column}"
-                    preview_text += f"- {entity_id}: {value}\n"
+                    clean_column = re.sub(
+                        r'[^a-z0-9_]+', '_', column.lower().strip())
+                    entity_id = f"sensor.provbz_xlsx_{clean_base_name}_{clean_column}"
+                    preview_text.append(preview_format.format(
+                        entity_id=entity_id, value=value))
+
+                preview_text = "\n".join(preview_text)
             except Exception as err:
                 _LOGGER.error("Error creating preview: %s", err)
-                preview_text = "Error creating preview"
+                preview_text = self.translations["previews"]["error"]
         else:
             # Generate preview for JSON sensors
             sensor_previews = []
