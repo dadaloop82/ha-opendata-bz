@@ -1,5 +1,5 @@
 {
-  "domain": "opendata_provincia_bolzano",
+  "domain": "provbz_opendata",
   "name": "OpenData Provincia Bolzano",
   "codeowners": ["@dadaloop82"],
   "config_flow": true,

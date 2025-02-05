@@ -1,16 +1,13 @@
 """
 Config Flow for OpenData Alto Adige Integration.
-
-This module handles the configuration flow for the OpenData Hub integration of the 
+This module handles the configuration flow for the OpenData Hub integration of the
 Autonomous Province of Bolzano/Bozen. It provides a step-by-step wizard for setting up
 data sources and sensors in Home Assistant.
-
 Project: ha-opendata-bz (https://github.com/dadaloop82/ha-opendata-bz)
 Author: Daniel Stimpfl (@dadaloop82)
 License: Apache License 2.0
 """
 from __future__ import annotations
-
 import logging
 import re
 from typing import Any
@@ -20,12 +17,10 @@ import pandas as pd
 import io
 import os
 import json
-
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.const import CONF_NAME
 from homeassistant.helpers.selector import selector
-
 from .const import (
     DOMAIN,
     NAME,
@@ -38,15 +33,12 @@ from .const import (
     BASE_API_URL,
 )
 from .api import OpenDataBolzanoApiClient, CannotConnect
-
 from .const import SUPPORTED_FORMATS
-
 _LOGGER = logging.getLogger(__name__)
 
 
-class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Configuration flow handler for OpenData Alto Adige integration.
-
     This class manages the step-by-step configuration process including:
     1. Language selection
     2. Data group selection
@@ -56,14 +48,12 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
     6. Field selection for JSON resources
     7. Final confirmation
     """
-
     VERSION = 1
     STEPS = ["user", "language", "group", "package",
              "resource", "rows", "fields", "confirm"]
 
     def __init__(self) -> None:
         """Initialize the configuration flow.
-
         Sets up the initial state variables for tracking progress through
         the configuration steps.
         """
@@ -82,14 +72,35 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         """Get translations for current language."""
         current_lang = self._config.get(CONF_LANGUAGE, "en")
         if not self._translations.get(current_lang):
-            self._translations[current_lang] = self.hass.data[DOMAIN].get(
-                "translations", {}).get(current_lang, {})
+            try:
+                component_dir = os.path.dirname(__file__)
+                translation_path = os.path.join(
+                    component_dir, "translations", f"{current_lang}.json")
+                if os.path.exists(translation_path):
+                    with open(translation_path, "r", encoding="utf-8") as file:
+                        self._translations[current_lang] = json.load(
+                            file).get("config", {})
+                else:
+                    fallback_path = os.path.join(
+                        component_dir, "translations", "en.json")
+                    if os.path.exists(fallback_path):
+                        with open(fallback_path, "r", encoding="utf-8") as file:
+                            self._translations[current_lang] = json.load(
+                                file).get("config", {})
+                    else:
+                        _LOGGER.warning(
+                            "No translation file found for language %s and no fallback available",
+                            current_lang
+                        )
+                        self._translations[current_lang] = {}
+            except Exception as err:
+                _LOGGER.error("Error loading translations: %s", err)
+                self._translations[current_lang] = {}
         return self._translations[current_lang]
 
     @property
     def _api_url(self) -> str:
         """Generate API URL with forced language parameter.
-
         Returns:
             str: API URL with the correct language parameter
         """
@@ -109,7 +120,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
     def _api_url_link(self) -> str:
         """Generate HTML link for API URL preview.
-
         Returns:
             str: HTML anchor tag with API URL
         """
@@ -117,11 +127,9 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
     async def async_step(self, step_id: str, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle a step in the configuration flow.
-
         Args:
             step_id: Identifier of the step to handle
             user_input: User provided input data
-
         Returns:
             FlowResult: Next step in the configuration flow
         """
@@ -133,7 +141,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step.
-
         Sets default name and moves to language selection.
         """
         self._config[CONF_NAME] = NAME
@@ -144,9 +151,7 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         if user_input is not None:
             self._config.update(user_input)
             return await self.async_step_group()
-
         supported_types = ", ".join(SUPPORTED_FORMATS.values())
-
         try:
             manifest_path = os.path.join(
                 os.path.dirname(__file__), "manifest.json")
@@ -156,7 +161,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         except Exception as err:
             _LOGGER.error("Error reading manifest version: %s", err)
             version = "?.?.?"
-
         return self.async_show_form(
             step_id="language",
             data_schema=vol.Schema({
@@ -170,24 +174,20 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
     async def async_step_group(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle group selection step.
-
         Fetches and displays available data groups from the API.
         """
         errors = {}
         groups = {}
-
         try:
             client = OpenDataBolzanoApiClient(self.hass)
             self._groups = await client.get_groups()
             lang = self._config.get(CONF_LANGUAGE, "en")
-
             # Create group options with translations
             groups = {
                 group["name"]: GROUP_TRANSLATIONS[lang].get(
                     group["name"], group["name"])
                 for group in self._groups
             }
-
             if user_input is not None:
                 self._config.update(user_input)
                 self._current_api_url = (
@@ -196,14 +196,12 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                     f"&include_datasets=true"
                 )
                 return await self.async_step_package()
-
         except CannotConnect:
             _LOGGER.exception("Connection failed")
             errors["base"] = "cannot_connect"
         except Exception as error:
             _LOGGER.exception("Unexpected exception: %s", error)
             errors["base"] = "unknown"
-
         return self.async_show_form(
             step_id="group",
             data_schema=vol.Schema({
@@ -217,17 +215,14 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
     async def async_step_package(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle package selection step.
-
         Fetches and displays available packages within selected group.
         """
         errors = {}
         packages = {}
-
         try:
             client = OpenDataBolzanoApiClient(self.hass)
             group_id = self._config[CONF_GROUP_ID]
             self._packages = await client.get_group_packages(group_id)
-
             if not self._packages:
                 errors["base"] = "no_packages"
             else:
@@ -236,7 +231,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                         "title", package.get("name", package["id"]))
                     for package in self._packages
                 }
-
             if user_input is not None and not errors:
                 self._config.update(user_input)
                 self._current_api_url = (
@@ -244,14 +238,12 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                     f"?id={user_input[CONF_PACKAGE_ID]}"
                 )
                 return await self.async_step_resource()
-
         except CannotConnect:
             _LOGGER.exception("Connection failed")
             errors["base"] = "cannot_connect"
         except Exception as error:
             _LOGGER.exception("Unexpected exception: %s", error)
             errors["base"] = "unknown"
-
         return self.async_show_form(
             step_id="package",
             data_schema=vol.Schema({
@@ -266,30 +258,26 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
     async def async_step_resource(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle resource selection step.
-
         Displays available data resources and their formats (JSON/WFS).
         Handles different configuration paths based on selected format.
         """
         errors = {}
         options = []
-
         try:
             client = OpenDataBolzanoApiClient(self.hass)
             package_id = self._config[CONF_PACKAGE_ID]
             package_details = await client.get_package_details(package_id)
             self._resources = package_details.get("resources", [])
-
-            format_label = self.translations["labels"]["format"]
-            unavailable_label = self.translations["labels"]["unavailable"]
-
+            format_label = self.translations["resource_labels"]["format"]
+            unavailable_label = self.translations["resource_labels"]["unavailable"]
             for resource in self._resources:
                 resource_format = resource.get("format", "").upper()
                 resource_name = resource.get("name", resource["id"])
                 clean_name = re.sub(r"\s*\(Formato [^)]+\)", "", resource_name)
-                if resource_format in selectable_formats:
+                if resource_format in SUPPORTED_FORMATS:
                     options.append({
                         "value": resource["id"],
-                        "label": self.translations["step"]["resource"]["labels"]["format"].format(
+                        "label": format_label.format(
                             format=resource_format,
                             name=clean_name
                         )
@@ -297,12 +285,11 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                 else:
                     options.append({
                         "value": f"not_available_{resource['id']}",
-                        "label": self.translations["step"]["resource"]["labels"]["unavailable"].format(
+                        "label": unavailable_label.format(
                             format=resource_format,
                             name=clean_name
                         )
                     })
-
             if user_input is not None:
                 selected_resource_id = user_input.get(CONF_RESOURCE_ID)
                 if not selected_resource_id.startswith("not_available_"):
@@ -312,18 +299,15 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                          == selected_resource_id),
                         None
                     )
-
                     if resource and resource.get("url"):
                         # Set resource format and prepare URL
                         self._config["resource_format"] = resource.get(
                             "format", "").upper()
-
                         parsed = urlparse(resource["url"])
                         query = parse_qs(parsed.query)
                         query.pop("lang", None)
                         lang = self._config.get(CONF_LANGUAGE, "en").lower()
                         query["lang"] = [lang]
-
                         # Add WFS specific parameters if needed
                         if self._config["resource_format"] == "WFS":
                             query.update({
@@ -334,7 +318,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                                 "TYPENAME": [resource.get("name", "")],
                                 "SRSNAME": ["EPSG:4326"]
                             })
-
                         # Build final URL
                         new_query = urlencode(query, doseq=True)
                         self._current_api_url = urlunparse((
@@ -346,7 +329,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                             parsed.fragment
                         ))
                         self._config["resource_url"] = self._current_api_url
-
                         # Choose next step based on format
                         if self._config["resource_format"] == "WFS":
                             return await self.async_step_confirm()
@@ -355,31 +337,24 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                                 # Fetch XLSX data preview
                                 xlsx_data = await client.get_resource_binary(self._config["resource_url"])
                                 df = pd.read_excel(io.BytesIO(xlsx_data))
-
                                 # Store preview data
                                 self._rows_data = df.to_dict('records')
-
                                 # Store column information for later
                                 self._config["xlsx_columns"] = list(df.columns)
-
                                 # Instead of going directly to confirm, go to rows selection
                                 return await self.async_step_rows()
-
                             except Exception as err:
                                 _LOGGER.error(
                                     "Error processing XLSX file: %s", err)
                                 errors["base"] = "invalid_xlsx"
-
                         # Default to JSON flow
                         return await self.async_step_rows()
-
         except CannotConnect:
             _LOGGER.exception("Connection failed")
             errors["base"] = "cannot_connect"
         except Exception as error:
             _LOGGER.exception("Unexpected exception: %s", error)
             errors["base"] = "unknown"
-
         return self.async_show_form(
             step_id="resource",
             data_schema=vol.Schema({
@@ -398,12 +373,10 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         """Handle row selection step for both JSON and Excel resources."""
         errors = {}
         row_names = {}
-
         try:
             if self._config.get("resource_format") in ["XLSX", "XLS"]:
                 column_format = self.translations["step"]["rows"]["labels"]["column_value"]
                 row_format = self.translations["step"]["rows"]["labels"]["row_format"]
-
                 for idx, row in enumerate(self._rows_data):
                     preview_values = []
                     for col in self._config["xlsx_columns"]:
@@ -413,7 +386,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                     preview = " | ".join(preview_values)
                     row_names[f"row_{idx}"] = row_format.format(
                         number=idx+1, preview=preview)
-
                 if user_input is not None:
                     selected_row = user_input.get("row")
                     if selected_row:
@@ -429,7 +401,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                      == self._config[CONF_RESOURCE_ID]),
                     None
                 )
-
                 if resource and resource.get("url"):
                     # Prepare URL with language parameter
                     parsed = urlparse(resource["url"])
@@ -446,7 +417,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                         new_query,
                         parsed.fragment
                     ))
-
                     # Fetch and process data
                     json_data = await client.get_resource_data(new_url)
                     if isinstance(json_data, dict) and "rows" in json_data:
@@ -455,13 +425,11 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                         self._rows_data = json_data
                     else:
                         self._rows_data = []
-
                     # Prepare row options
                     row_names = {
                         (row.get("name") or f"row_{idx}"): (row.get("name") or f"row_{idx}")
                         for idx, row in enumerate(self._rows_data)
                     }
-
                     # Handle user selection
                     if user_input is not None:
                         selected_row = user_input.get("row")
@@ -479,7 +447,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                                 errors["base"] = "no_rows_selected"
                         else:
                             errors["base"] = "no_rows_selected"
-
         except CannotConnect:
             _LOGGER.exception("Connection failed")
             errors["base"] = "cannot_connect"
@@ -487,14 +454,12 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
             _LOGGER.exception(
                 "Unexpected exception in rows step: %s", error)
             errors["base"] = "unknown"
-
         options = [
             {"value": f"row_{idx}",
              # Rimuoviamo il testo "Riga" hardcoded
              "label": f"{row.get(list(row.keys())[0], '')} | {', '.join(f'{k}: {v}' for k,v in row.items())}"
              } for idx, row in enumerate(self._rows_data)
         ]
-
         return self.async_show_form(
             step_id="rows",
             data_schema=vol.Schema({
@@ -514,12 +479,10 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
         """Handle field selection step for both JSON and Excel resources."""
         errors = {}
         options = []
-
         try:
             if self._config.get("resource_format") in ["XLSX", "XLS"]:
                 # Excel handling
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
-
                 # Create options for each column with its value
                 for column in self._config["xlsx_columns"]:
                     value = selected_row.get(column, "N/A")
@@ -527,19 +490,16 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                         "value": f"field:{column}",
                         "label": f"{column}: {value}"
                     })
-
                 # Handle user selection
                 if user_input is not None:
                     selected = user_input.get("fields", [])
                     selected_fields = []
-
                     for item in selected:
                         try:
                             field_type, key = item.split(":", 1)
                             selected_fields.append((field_type, key))
                         except Exception:
                             pass
-
                     if selected_fields:
                         self._config["selected_fields"] = selected_fields
                         return await self.async_step_confirm()
@@ -551,9 +511,7 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                     first_row = self._rows_data[0]
                 else:
                     first_row = self._rows_data[self._config["selected_rows"][0]]
-
                 processed_fields = set()
-
                 # Process measurement fields if available
                 measurements = first_row.get("measurements", [])
                 if isinstance(measurements, list):
@@ -562,17 +520,14 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                             code = measurement["code"].lower()
                             description = measurement["description"]
                             value = first_row.get(code, "N/A")
-
                             label = (f"{code} ({description}): {value}"
                                      if value != "N/A"
                                      else f"{code}: {value}")
-
                             options.append({
                                 "value": f"measurement:{code}",
                                 "label": label
                             })
                             processed_fields.add(code)
-
                 # Process regular fields not already handled as measurements
                 for field_name, field_value in first_row.items():
                     if (field_name != "measurements" and
@@ -581,29 +536,24 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                             "value": f"field:{field_name}",
                             "label": f"{field_name}: {field_value}"
                         })
-
                 # Handle user selection
                 if user_input is not None:
                     selected = user_input.get("fields", [])
                     selected_fields = []
-
                     for item in selected:
                         try:
                             field_type, key = item.split(":", 1)
                             selected_fields.append((field_type, key))
                         except Exception:
                             pass
-
                     if selected_fields:
                         self._config["selected_fields"] = selected_fields
                         return await self.async_step_confirm()
                     else:
                         errors["base"] = "no_fields_selected"
-
         except Exception as error:
             _LOGGER.exception("Unexpected exception in fields step: %s", error)
             errors["base"] = "unknown"
-
         return self.async_show_form(
             step_id="fields",
             data_schema=vol.Schema({
@@ -621,27 +571,23 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
 
     async def async_step_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle final confirmation step.
-
         Shows preview of entities to be created and finalizes configuration.
         Handles both JSON and WFS resources appropriately.
         """
         if user_input is not None:
             # Initialize configuration storage
             self.hass.data.setdefault(DOMAIN, {})
-
             # Prepare final configuration data
             config_data = dict(self._config)
             config_data["rows_data"] = self._rows_data
             config_data["resources"] = self._resources
             config_data["unique_id"] = self.flow_id
-
             # Get selected resource details
             resource = next(
                 (r for r in self._resources if r["id"]
                  == self._config[CONF_RESOURCE_ID]),
                 None
             )
-
             # Store configuration in Home Assistant
             self.hass.data[DOMAIN][self.flow_id] = {
                 "api": OpenDataBolzanoApiClient(self.hass),
@@ -649,13 +595,11 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                 "rows_data": self._rows_data,
                 "resources": self._resources
             }
-
             # Create configuration entry
             return self.async_create_entry(
                 title=resource.get("name", NAME),
                 data=config_data
             )
-
         # Prepare preview based on resource type
         if self._config.get("resource_format", "").upper() == "WFS":
             preview_text = self.translations["step"]["confirm"]["previews"]["wfs"]
@@ -664,13 +608,11 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
                 selected_fields = self._config["selected_fields"]
                 preview_format = self.translations["step"]["confirm"]["previews"]["entity"]
-
                 preview_text = []
                 base_name = str(selected_row.get(
                     list(selected_row.keys())[0], ''))
                 clean_base_name = re.sub(
                     r'[^a-z0-9_]+', '_', base_name.lower().strip())
-
                 for field_type, column in selected_fields:
                     value = selected_row.get(column, "N/A")
                     clean_column = re.sub(
@@ -678,7 +620,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                     entity_id = f"sensor.provbz_xlsx_{clean_base_name}_{clean_column}"
                     preview_text.append(preview_format.format(
                         entity_id=entity_id, value=value))
-
                 preview_text = "\n".join(preview_text)
             except Exception as err:
                 _LOGGER.error("Error creating preview: %s", err)
@@ -690,7 +631,6 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                 row_name = row.get("name", "row")
                 row_name_clean = re.sub(
                     r'[^a-z0-9_]+', '_', row_name.lower().strip())
-
                 for field_type, key in self._config["selected_fields"]:
                     if field_type == "measurement":
                         measurement = next(
@@ -705,14 +645,11 @@ class OpenDataProvinceBolzanoConfigFlow(config_entries.ConfigFlow, domain=DOMAIN
                             sensor_field = key.lower()
                     else:
                         sensor_field = key.lower()
-
                     sensor_field = re.sub(r'_+', '_', sensor_field).strip('_')
                     entity_id = f"sensor.provbz_{row_name_clean}_{sensor_field}"
                     value = row.get(key, "N/A")
                     sensor_previews.append(f"{entity_id}: {value}")
-
             preview_text = "\n".join(sensor_previews)
-
         return self.async_show_form(
             step_id="confirm",
             data_schema=vol.Schema({}),

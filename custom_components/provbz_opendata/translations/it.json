@@ -1,91 +1,94 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "OpenData Alto Adige",
-                "description": "Questa integrazione utilizza dati forniti da [Open Data Alto Adige](https://data.civis.bz.it/dataset) con licenza Creative Commons CC0 1.0 Universale - Public Domain Dedication (CC0 1.0). Non tutti i tipi di dati disponibili sono supportati da questa integrazione.\n\nTipologie di dati supportate: {supported_types}\n\nVersione dell'integrazione: {version}.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
-                "data": {
-                    "name": "Nome dell'integrazione"
-                }
-            },
-            "language": {
-                "title": "Selezione Lingua",
-                "description": "Seleziona la lingua dei dati forniti dall'API.\nQuesta scelta influenzerà la lingua dei contenuti mostrati durante la configurazione e dei dati recuperati.\n\nVersione: {version}",
-                "data": {
-                    "language": "Lingua dei dati"
-                }
-            },
-            "group": {
-                "title": "Selezione Gruppo",
-                "description": "I dati sono organizzati in gruppi tematici.\nSeleziona il gruppo che contiene i dati che ti interessano.\nQuesta scelta determinerà quali dataset saranno disponibili nel prossimo passaggio.",
-                "data": {
-                    "group_id": "Gruppo Tematico"
-                }
-            },
-            "package": {
-                "title": "Selezione Dataset",
-                "description": "Scegli il dataset specifico da monitorare all'interno del gruppo selezionato.\nOgni dataset contiene dati correlati a un tema specifico.\n\nURL API: {api_url}",
-                "data": {
-                    "package_id": "Dataset Disponibile"
-                }
-            },
-            "resource": {
-                "title": "Selezione Risorsa",
-                "description": "Seleziona la risorsa dati da monitorare.\nLe risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nURL API: {api_url}",
-                "data": {
-                    "resource_id": "Risorsa Disponibile"
-                }
-            },
-            "rows": {
-                "title": "Selezione Riga",
-                "description": "Seleziona la riga dei dati da monitorare.\nPer ogni riga vengono mostrati i valori disponibili per facilitare la scelta.\n\nURL API: {api_url}",
-                "data": {
-                    "row": "Riga Disponibile"
-                }
-            },
-            "fields": {
-                "title": "Selezione Campo",
-                "description": "Seleziona il campo da monitorare.\nQuesto valore diventerà un sensore in Home Assistant.\nPer ogni campo è mostrato il valore attuale come anteprima.\n\nURL API: {api_url}",
-                "data": {
-                    "fields": "Campo da Monitorare"
-                }
-            },
-            "confirm": {
-                "title": "Conferma Configurazione",
-                "description": "Verifica la tua selezione. Home Assistant creerà il seguente sensore:\n\n{fields_preview}\n\nURL API: {api_url}\n\nVuoi procedere con questa configurazione?"
-            }
-        },
-        "error": {
-            "cannot_connect": "Impossibile connettersi all'API",
-            "invalid_auth": "Autenticazione non valida",
-            "invalid_xlsx": "Il file Excel non può essere letto o non è valido",
-            "no_fields_available": "Nessun campo disponibile nei dati",
-            "no_rows_available": "Nessun elemento disponibile nei dati",
-            "no_rows_selected": "Seleziona una riga",
-            "no_fields_selected": "Seleziona un campo",
-            "no_packages": "Nessun dataset disponibile nel gruppo selezionato",
-            "no_json_resources": "Nessuna risorsa disponibile nel dataset",
-            "unknown": "Errore inaspettato"
-        },
-        "loading_errors": {
-            "default_groups": "Errore nel caricamento dei gruppi",
-            "default_packages": "Errore nel caricamento dei pacchetti"
-        },
-        "previews": {
-            "entity_value": "{entity_id} = {value}",
-            "sensor_preview": "{entity_id}: {value}"
-        },
-        "resource_labels": {
-            "format": "[{format}] {name}",
-            "unavailable": "🚫 [{format}] {name}"
-        },
-        "excel": {
-            "column_value": "{column}: {value}",
-            "row_preview": "{number} | {preview}"
-        },
-        "abort": {
-            "already_configured": "Questa integrazione è già configurata",
-            "unknown_step": "Step di configurazione sconosciuto"
+  "config": {
+    "step": {
+      "user": {
+        "title": "OpenData Alto Adige",
+        "description": "Questa integrazione utilizza dati forniti da [Open Data Alto Adige](https://data.civis.bz.it/dataset) con licenza Creative Commons CC0 1.0 Universale - Public Domain Dedication (CC0 1.0).\n\nNon tutti i tipi di dati disponibili sono supportati da questa integrazione.\n\nTipologie di dati supportate: {supported_types}.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.\n\nVersione dell'integrazione: {version}",
+        "data": {
+          "name": "Nome dell'integrazione"
         }
+      },
+      "language": {
+        "title": "Selezione Lingua",
+        "description": "Questa integrazione utilizza dati forniti da [Open Data Alto Adige](https://data.civis.bz.it/dataset) con licenza Creative Commons CC0 1.0 Universale - Public Domain Dedication (CC0 1.0).\n\nNon tutti i tipi di dati disponibili sono supportati da questa integrazione.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.\n\nSeleziona la lingua dei dati forniti dall'API.\nQuesta scelta influenzerà la lingua dei contenuti mostrati durante la configurazione e dei dati recuperati.\n\nVersione dell'integrazione: {version}",
+        "data": {
+          "language": "Lingua dei dati"
+        }
+      },
+      "group": {
+        "title": "Selezione Gruppo",
+        "description": "I dati sono organizzati in gruppi tematici.\nSeleziona il gruppo che contiene i dati che ti interessano.\nQuesta scelta determinerà quali dataset saranno disponibili nel prossimo passaggio.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
+        "data": {
+          "group_id": "Gruppo Tematico"
+        }
+      },
+      "package": {
+        "title": "Selezione Dataset",
+        "description": "Scegli il dataset specifico da monitorare all'interno del gruppo selezionato.\nOgni dataset contiene dati correlati a un tema specifico.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.\n\nURL API: {api_url}",
+        "data": {
+          "package_id": "Dataset Disponibile"
+        }
+      },
+      "resource": {
+        "title": "Selezione Risorsa",
+        "description": "Seleziona la risorsa dati da monitorare.\nLe risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.\n\nURL API: {api_url}",
+        "data": {
+          "resource_id": "Risorsa Disponibile"
+        }
+      },
+      "rows": {
+        "title": "Selezione Riga",
+        "description": "Seleziona la riga dei dati da monitorare.\nPer ogni riga vengono mostrati i valori disponibili per facilitare la scelta.\n\nURL API: {api_url}",
+        "data": {
+          "row": "Riga Disponibile"
+        }
+      },
+      "fields": {
+        "title": "Selezione Campo",
+        "description": "Seleziona il campo da monitorare.\nQuesto valore diventerà un sensore in Home Assistant.\nPer ogni campo è mostrato il valore attuale come anteprima.\n\nURL API: {api_url}",
+        "data": {
+          "fields": "Campo da Monitorare"
+        }
+      },
+      "confirm": {
+        "title": "Conferma Configurazione",
+        "description": "Verifica la tua selezione. Home Assistant creerà il seguente sensore:\n\n{fields_preview}\n\nURL API: {api_url}\n\nVuoi procedere con questa configurazione?"
+      }
+    },
+    "error": {
+      "cannot_connect": "Impossibile connettersi all'API",
+      "invalid_auth": "Autenticazione non valida",
+      "invalid_xlsx": "Il file Excel non può essere letto o non è valido",
+      "no_fields_available": "Nessun campo disponibile nei dati",
+      "no_rows_available": "Nessun elemento disponibile nei dati",
+      "no_rows_selected": "Seleziona una riga",
+      "no_fields_selected": "Seleziona un campo",
+      "no_packages": "Nessun dataset disponibile nel gruppo selezionato",
+      "no_json_resources": "Nessuna risorsa disponibile nel dataset",
+      "unknown": "Errore inaspettato"
+    },
+    "loading_errors": {
+      "default_groups": "Errore nel caricamento dei gruppi",
+      "default_packages": "Errore nel caricamento dei pacchetti"
+    },
+    "previews": {
+      "entity_value": "{entity_id} = {value}",
+      "sensor_preview": "{entity_id}: {value}"
+    },
+    "excel": {
+      "column_value": "{column}: {value}",
+      "row_preview": "{number} | {preview}"
+    },
+    "abort": {
+      "already_configured": "Questa integrazione è già configurata",
+      "unknown_step": "Step di configurazione sconosciuto"
+    },
+    "resource_labels": {
+      "format": "[{format}] {name}",
+      "unavailable": "🚫 [{format}] {name}"
     }
+  },
+  "labels": {
+    "format": "[{format}] {name}"
+  }
 }

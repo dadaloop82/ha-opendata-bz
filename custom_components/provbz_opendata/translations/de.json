@@ -1,91 +1,94 @@
 {
   "config": {
-      "step": {
-          "user": {
-              "title": "OpenData Südtirol",
-              "description": "Diese Integration nutzt Daten von [Open Data Südtirol](https://data.civis.bz.it/dataset), die unter der Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) Lizenz veröffentlicht sind. Nicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nUnterstützte Datentypen: {supported_types}\n\nVersion der Integration: {version}.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, das Laden kann einige Sekunden dauern.",
-              "data": {
-                  "name": "Name der Integration"
-              }
-          },
-          "language": {
-              "title": "Sprachauswahl",
-              "description": "Wählen Sie die Sprache der von der API bereitgestellten Daten.\nDiese Auswahl beeinflusst die Sprache der während der Konfiguration angezeigten Inhalte sowie der abgerufenen Daten.\n\nVersion: {version}",
-              "data": {
-                  "language": "Sprache der Daten"
-              }
-          },
-          "group": {
-              "title": "Gruppenauswahl",
-              "description": "Die Daten sind in thematische Gruppen organisiert.\nWählen Sie die Gruppe aus, die die für Sie relevanten Daten enthält.\nDiese Auswahl bestimmt, welche Datensätze im nächsten Schritt verfügbar sind.",
-              "data": {
-                  "group_id": "Thematische Gruppe"
-              }
-          },
-          "package": {
-              "title": "Datensatz auswählen",
-              "description": "Wählen Sie den spezifischen Datensatz aus, den Sie innerhalb der ausgewählten Gruppe überwachen möchten.\nJeder Datensatz enthält themenbezogene Daten.\n\nAPI-URL: {api_url}",
-              "data": {
-                  "package_id": "Verfügbarer Datensatz"
-              }
-          },
-          "resource": {
-              "title": "Ressource auswählen",
-              "description": "Wählen Sie die Datenquelle aus, die Sie überwachen möchten.\nRessourcen sind die tatsächlichen Datenquellen innerhalb des ausgewählten Datensatzes.\n\nAPI-URL: {api_url}",
-              "data": {
-                  "resource_id": "Verfügbare Ressource"
-              }
-          },
-          "rows": {
-              "title": "Zeile auswählen",
-              "description": "Wählen Sie die Datenzeile aus, die Sie überwachen möchten.\nFür jede Zeile werden die verfügbaren Werte angezeigt, um die Auswahl zu erleichtern.\n\nAPI-URL: {api_url}",
-              "data": {
-                  "row": "Verfügbare Zeile"
-              }
-          },
-          "fields": {
-              "title": "Feld auswählen",
-              "description": "Wählen Sie das zu überwachende Feld aus.\nDieser Wert wird als Sensor in Home Assistant erstellt.\nFür jedes Feld wird eine Vorschau des aktuellen Wertes angezeigt.\n\nAPI-URL: {api_url}",
-              "data": {
-                  "fields": "Zu überwachendes Feld"
-              }
-          },
-          "confirm": {
-              "title": "Konfiguration bestätigen",
-              "description": "Überprüfen Sie Ihre Auswahl. Home Assistant wird den folgenden Sensor erstellen:\n\n{fields_preview}\n\nAPI-URL: {api_url}\n\nMöchten Sie diese Konfiguration fortsetzen?"
-          }
+    "step": {
+      "user": {
+        "title": "OpenData Südtirol",
+        "description": "Diese Integration nutzt Daten von [Open Data Südtirol](https://data.civis.bz.it/dataset) unter der Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) Lizenz.\n\nNicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nUnterstützte Datentypen: {supported_types}.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nIntegrationsversion: {version}",
+        "data": {
+          "name": "Name der Integration"
+        }
       },
-      "error": {
-          "cannot_connect": "Verbindung zur API nicht möglich",
-          "invalid_auth": "Ungültige Authentifizierung",
-          "invalid_xlsx": "Die Excel-Datei kann nicht gelesen werden oder ist ungültig",
-          "no_fields_available": "Keine verfügbaren Felder in den Daten",
-          "no_rows_available": "Keine verfügbaren Elemente in den Daten",
-          "no_rows_selected": "Wählen Sie eine Zeile aus",
-          "no_fields_selected": "Wählen Sie ein Feld aus",
-          "no_packages": "Keine Datensätze in der ausgewählten Gruppe verfügbar",
-          "no_json_resources": "Keine Ressourcen im Datensatz verfügbar",
-          "unknown": "Unerwarteter Fehler"
+      "language": {
+        "title": "Sprachauswahl",
+        "description": "Diese Integration nutzt Daten von [Open Data Südtirol](https://data.civis.bz.it/dataset) unter der Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) Lizenz.\n\nNicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nWähle die Sprache der von der API bereitgestellten Daten.\nDiese Auswahl beeinflusst die Sprache der während der Konfiguration angezeigten Inhalte und der abgerufenen Daten.\n\nIntegrationsversion: {version}",
+        "data": {
+          "language": "Sprache der Daten"
+        }
       },
-      "loading_errors": {
-          "default_groups": "Fehler beim Laden der Gruppen",
-          "default_packages": "Fehler beim Laden der Pakete"
+      "group": {
+        "title": "Gruppenauswahl",
+        "description": "Die Daten sind in thematischen Gruppen organisiert.\nWähle die Gruppe, die die für dich interessanten Daten enthält.\nDiese Auswahl bestimmt, welche Datensätze im nächsten Schritt verfügbar sind.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.",
+        "data": {
+          "group_id": "Thematische Gruppe"
+        }
       },
-      "previews": {
-          "entity_value": "{entity_id} = {value}",
-          "sensor_preview": "{entity_id}: {value}"
+      "package": {
+        "title": "Datensatz-Auswahl",
+        "description": "Wähle den spezifischen Datensatz, der innerhalb der ausgewählten Gruppe überwacht werden soll.\nJeder Datensatz enthält Daten zu einem bestimmten Thema.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nAPI-URL: {api_url}",
+        "data": {
+          "package_id": "Verfügbarer Datensatz"
+        }
       },
-      "resource_labels": {
-          "format": "[{format}] {name}",
-          "unavailable": "🚫 [{format}] {name}"
+      "resource": {
+        "title": "Ressourcenauswahl",
+        "description": "Wähle die Datenquelle zur Überwachung aus.\nDie Ressourcen sind die tatsächlichen Datenquellen innerhalb des ausgewählten Datensatzes.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nAPI-URL: {api_url}",
+        "data": {
+          "resource_id": "Verfügbare Ressource"
+        }
       },
-      "excel": {
-          "column_value": "{column}: {value}",
-          "row_preview": "{number} | {preview}"
+      "rows": {
+        "title": "Zeilenauswahl",
+        "description": "Wähle die Datenzeile zur Überwachung aus.\nFür jede Zeile werden die verfügbaren Werte angezeigt, um die Auswahl zu erleichtern.\n\nAPI-URL: {api_url}",
+        "data": {
+          "row": "Verfügbare Zeile"
+        }
       },
-      "abort": {
-          "already_configured": "Diese Integration ist bereits konfiguriert",
-          "unknown_step": "Unbekannter Konfigurationsschritt"
+      "fields": {
+        "title": "Feldauswahl",
+        "description": "Wähle das Feld zur Überwachung aus.\nDieser Wert wird zu einem Sensor in Home Assistant.\nFür jedes Feld wird der aktuelle Wert als Vorschau angezeigt.\n\nAPI-URL: {api_url}",
+        "data": {
+          "fields": "Feld zur Überwachung"
+        }
+      },
+      "confirm": {
+        "title": "Konfigurationsbestätigung",
+        "description": "Überprüfe deine Auswahl. Home Assistant wird den folgenden Sensor erstellen:\n\n{fields_preview}\n\nAPI-URL: {api_url}\n\nMöchtest du mit dieser Konfiguration fortfahren?"
       }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zur API nicht möglich",
+      "invalid_auth": "Ungültige Authentifizierung",
+      "invalid_xlsx": "Die Excel-Datei kann nicht gelesen werden oder ist ungültig",
+      "no_fields_available": "Keine Felder in den Daten verfügbar",
+      "no_rows_available": "Keine Elemente in den Daten verfügbar",
+      "no_rows_selected": "Wähle eine Zeile aus",
+      "no_fields_selected": "Wähle ein Feld aus",
+      "no_packages": "Keine Datensätze in der ausgewählten Gruppe verfügbar",
+      "no_json_resources": "Keine Ressourcen im Datensatz verfügbar",
+      "unknown": "Unerwarteter Fehler"
+    },
+    "loading_errors": {
+      "default_groups": "Fehler beim Laden der Gruppen",
+      "default_packages": "Fehler beim Laden der Pakete"
+    },
+    "previews": {
+      "entity_value": "{entity_id} = {value}",
+      "sensor_preview": "{entity_id}: {value}"
+    },
+    "excel": {
+      "column_value": "{column}: {value}",
+      "row_preview": "{number} | {preview}"
+    },
+    "abort": {
+      "already_configured": "Diese Integration ist bereits konfiguriert",
+      "unknown_step": "Unbekannter Konfigurationsschritt"
+    },
+    "resource_labels": {
+      "format": "[{format}] {name}",
+      "unavailable": "🚫 [{format}] {name}"
+    }
+  },
+  "labels": {
+    "format": "[{format}] {name}"
   }
 }

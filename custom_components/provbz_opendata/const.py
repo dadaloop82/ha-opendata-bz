@@ -13,9 +13,9 @@ from typing import Final
 from homeassistant.const import Platform
 
 # Integration identifiers
-DOMAIN: Final = "opendata_provincia_bolzano"
+DOMAIN: Final = "provbz_opendata"
 NAME: Final = "OpenData Provincia Bolzano"
-VERSION: Final = "1.0.0"
+VERSION: Final = "1.1.0"
 
 # Base API endpoint for the OpenData South Tyrol platform
 BASE_API_URL: Final = "https://data.civis.bz.it/api/3/action"
@@ -26,7 +26,8 @@ CONF_DATASET_ID = "dataset_id"      # Dataset identifier within a group
 CONF_PACKAGE_ID = "package_id"      # Package identifier containing resources
 CONF_RESOURCE_ID = "resource_id"    # Specific resource identifier
 CONF_LANGUAGE = "language"          # Interface language selection
-CONF_SELECTED_FIELDS = "selected_fields"  # Fields to be imported from the dataset
+# Fields to be imported from the dataset
+CONF_SELECTED_FIELDS = "selected_fields"
 
 # Supported languages for the integration interface
 SUPPORTED_LANGUAGES = {
@@ -57,7 +58,8 @@ WMS_MAP_DEFAULTS = {
     "width": 2048,                          # Map width in pixels
     "height": 2048,                         # Map height in pixels
     "feature_count": 100,                   # Maximum features to return
-    "scan_interval": 300,                   # Update interval in seconds (5 minutes)
+    # Update interval in seconds (5 minutes)
+    "scan_interval": 300,
 }
 
 XLSX_SUPPORTED_FORMATS = ["XLSX", "XLS"]
