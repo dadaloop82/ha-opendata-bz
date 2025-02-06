@@ -31,7 +31,7 @@
       },
       "resource": {
         "title": "Selezione Risorsa",
-        "description": "Seleziona la risorsa dati da monitorare.\nLe risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.\n\nURL API: {api_url}",
+        "description": "Seleziona la risorsa dati da monitorare.\nLe risorse sono le fonti di dati effettive all'interno del dataset selezionato.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.\n\nNon tutti i tipi di dati disponibili sono supportati da questa integrazione.\n\nURL API: {api_url}",
         "data": {
           "resource_id": "Risorsa Disponibile"
         }
@@ -40,7 +40,8 @@
         "title": "Selezione Riga",
         "description": "Seleziona la riga dei dati da monitorare.\nPer ogni riga vengono mostrati i valori disponibili per facilitare la scelta.\n\nURL API: {api_url}",
         "data": {
-          "row": "Riga Disponibile"
+          "row": "Riga Disponibile",
+          "confirm": "Conferma selezione"
         }
       },
       "fields": {
@@ -52,7 +53,12 @@
       },
       "confirm": {
         "title": "Conferma Configurazione",
-        "description": "Verifica la tua selezione. Home Assistant creerà il seguente sensore:\n\n{fields_preview}\n\nURL API: {api_url}\n\nVuoi procedere con questa configurazione?"
+        "description": "Verifica la tua selezione. Home Assistant creerà il seguente sensore:\n\n{fields_preview}\n\nURL API: {api_url}\n\nVuoi procedere con questa configurazione?",
+        "previews": {
+          "entity": "{entity_id}: {value}",
+          "wfs": "Verrà creato un tracker WFS",
+          "error": "Errore nella creazione dell'anteprima"
+        }
       }
     },
     "error": {
@@ -73,7 +79,8 @@
     },
     "previews": {
       "entity_value": "{entity_id} = {value}",
-      "sensor_preview": "{entity_id}: {value}"
+      "sensor_preview": "{entity_id}: {value}",
+      "error": "Errore nella creazione dell'anteprima"
     },
     "excel": {
       "column_value": "{column}: {value}",

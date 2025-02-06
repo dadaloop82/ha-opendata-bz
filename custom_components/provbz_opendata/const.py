@@ -38,10 +38,11 @@ SUPPORTED_LANGUAGES = {
 }
 
 SUPPORTED_FORMATS = {
-    "JSON": "JSON",
-    "WFS": "WFS",
-    "XLSX": "XLSX",
-    "XLS": "XLS"
+    "JSON": "JavaScript Object Notation",
+    "WFS": "Web Feature Service",
+    "XLSX": "Office Open XML Spreadsheet",
+    "XLS": "Excel Binary File Format",
+    "CSV": "Comma-Separated Values"
 }
 
 # Default configuration values
