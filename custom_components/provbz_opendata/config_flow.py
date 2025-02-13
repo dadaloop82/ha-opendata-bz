@@ -71,38 +71,48 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     def _sanitize_entity_name(self, name: str) -> str:
         """Sanitizza una stringa per uso come nome entità in Home Assistant."""
+        if not name:
+            return 'unnamed'
+
         name = str(name).lower()
-
+        # Rimuove le parentesi e il loro contenuto
         name = re.sub(r'\([^)]*\)', '', name)
-
+        # Sostituisce caratteri non alfanumerici con _
         name = re.sub(r'[^a-z0-9]+', '_', name)
-
+        # Rimuove _ multipli
         name = re.sub(r'_+', '_', name)
-
+        # Rimuove _ iniziali e finali
         name = name.strip('_')
+
         return name[:64] or 'unnamed'
 
-    def _format_excel_row_label(self, row_idx: int, row_data: dict, columns: list) -> str:
+    def _format_excel_row_label(self, row_idx: int, row_data: dict, columns: list) -> str | None:
         """Formatta l'etichetta per una riga Excel."""
-        # Non mostrare righe con primo valore nan
-        first_col = columns[0]
-        first_val = row_data.get(first_col, '')
-        if pd.isna(first_val):
-            return None
+        # Controlla se tutti i valori sono NaN o vuoti
+        all_empty = True
+        preview_data = []
 
         # Prendi solo le prime 5 colonne
         preview_columns = columns[:5]
-        data_preview = []
         for col in preview_columns:
-            value = str(row_data.get(col, '')).strip()
-            if value and pd.notna(value):
-                data_preview.append(f"{value}")
+            value = row_data.get(col, '')
+            if pd.notna(value) and str(value).strip():
+                all_empty = False
+                preview_data.append(str(value).strip())
 
-        row_num = row_idx + 1
-        preview = ' | '.join(data_preview)
-        return f"Riga {row_num} - {preview}"
+        # Se la riga è vuota o contiene solo NaN, ritorna None
+        if all_empty:
+            return None
 
-    def _format_excel_column_label(self, col_idx: int, col_name: str, value: str) -> str:
+        # Usa l'indice effettivo dell'Excel (aggiungi 1 per l'header)
+        row_num = row_idx + 2  # +2 perché row_idx parte da 0 e c'è l'header
+
+        preview = ' | '.join(preview_data)
+        if preview:
+            return f"Riga {row_num} - {preview}"
+        return None
+
+    def _format_excel_column_label(self, col_idx: int, col_name: str) -> str:
         """Formatta l'etichetta per una colonna Excel."""
         def get_column_letter(n):
             string = ""
@@ -114,6 +124,99 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         col_letter = get_column_letter(col_idx)
         return f"{col_letter} - {col_name}"
+
+    async def async_step_fields(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Handle field selection step."""
+        errors = {}
+        options = []
+        processed_fields = set()
+        try:
+            # Determina le colonne in base al formato
+            if self._config.get("resource_format") in ["XLSX", "XLS", "CSV"]:
+                columns = self._config.get("xlsx_columns", [])
+                selected_row = self._rows_data[self._config["selected_rows"][0]]
+
+                for col_idx, column in enumerate(columns):
+                    if not str(column).startswith("Unnamed"):  # Skip unnamed columns
+                        value = selected_row.get(column, "")
+                        if pd.notna(value):  # Check if value is not NaN
+                            formatted_label = self._format_excel_column_label(
+                                col_idx, column)
+                            options.append({
+                                "value": f"field:{column}",
+                                "label": f"{formatted_label}: {value}"
+                            })
+            else:  # JSON
+                selected_row = self._rows_data[self._config["selected_rows"][0]]
+
+                # Process measurement fields if available
+                measurements = selected_row.get("measurements", [])
+                if isinstance(measurements, list):
+                    for measurement in measurements:
+                        if "description" in measurement and "code" in measurement:
+                            code = measurement["code"].lower()
+                            description = measurement["description"]
+                            value = selected_row.get(code, "N/A")
+                            options.append({
+                                "value": f"measurement:{code}",
+                                "label": f"{code} ({description}): {value}"
+                            })
+                    options = self._sort_options(options)
+                    options = self._filter_na_values(options)
+                    processed_fields.add(code)
+
+                # Process regular fields not already handled as measurements
+                for field_name, field_value in selected_row.items():
+                    if (field_name != "measurements" and
+                            field_name.lower() not in processed_fields and
+                            not isinstance(field_value, (dict, list))):
+                        options.append({
+                            "value": f"field:{field_name}",
+                            "label": f"{field_name}: {field_value}"
+                        })
+
+            if user_input is not None:
+                selected = user_input.get("fields", [])
+                if not selected:
+                    errors["base"] = "no_fields_selected"
+                else:
+                    selected_fields = []
+                    for item in selected:
+                        try:
+                            field_type, key = item.split(":", 1)
+                            selected_fields.append((field_type, key))
+                        except Exception:
+                            pass
+                    if selected_fields:
+                        self._config["selected_fields"] = selected_fields
+                        return await self.async_step_confirm()
+
+            if not options:
+                errors["base"] = "no_fields_available"
+
+            return self.async_show_form(
+                step_id="fields",
+                data_schema=vol.Schema({
+                    vol.Required("fields", default=[]): selector({
+                        "select": {
+                            "multiple": True,
+                            "options": options,
+                            "mode": "dropdown"
+                        }
+                    })
+                }),
+                errors=errors if errors else None,
+                description_placeholders={"api_url": self._api_url_link()}
+            )
+
+        except Exception as error:
+            _LOGGER.exception("Unexpected exception in fields step: %s", error)
+            errors["base"] = "unknown"
+            return self.async_show_form(
+                step_id="fields",
+                data_schema=vol.Schema({}),
+                errors=errors
+            )
 
     def _clean_resource_name(self, name: str, resource_format: str) -> str:
         name = re.sub(r'\s*\(Formato\s+' + resource_format +
@@ -467,7 +570,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_rows(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle row selection step for both JSON and Excel resources."""
+        """Handle row selection step."""
         errors = {}
         options = []
         try:
@@ -476,97 +579,120 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # Fetch JSON data if not already loaded
                 if not self._rows_data:
                     json_data = await client.get_resource_data(self._config["resource_url"])
-                    if isinstance(json_data, dict) and "rows" in json_data:
-                        self._rows_data = json_data["rows"]
-                    elif isinstance(json_data, list):
+                    if isinstance(json_data, list):
                         self._rows_data = json_data
+                    elif isinstance(json_data, dict) and "rows" in json_data:
+                        self._rows_data = json_data["rows"]
                     else:
                         self._rows_data = []
+
+                    _LOGGER.debug("Loaded JSON data rows: %d",
+                                  len(self._rows_data))
+
                 # Create options for JSON rows
                 for idx, row in enumerate(self._rows_data):
-                    name = row.get("name", f"Row {idx+1}")
-                    options.append({
-                        "value": f"row_{idx}",
-                        "label": name
-                    })
-            elif self._config.get("resource_format") in ["XLSX", "XLS", "CSV", "XML"]:
-                # Fetch Excel data if not already loaded
+                    if isinstance(row, dict):
+                        name = str(row.get("name", f"Row {idx+1}"))
+                        options.append({
+                            "value": f"row_{idx}",
+                            "label": name
+                        })
+
+            elif self._config.get("resource_format") in ["XLSX", "XLS"]:
                 if not self._rows_data:
                     data = await client.get_resource_binary(self._config["resource_url"])
+                    try:
+                        df = pd.read_excel(
+                            io.BytesIO(data),
+                            engine='openpyxl',
+                            na_values=['', 'N/A', 'NA'],
+                            keep_default_na=True
+                        )
+                    except Exception as e:
+                        _LOGGER.debug("openpyxl failed, trying xlrd: %s", e)
+                        df = pd.read_excel(
+                            io.BytesIO(data),
+                            engine='xlrd',
+                            na_values=['', 'N/A', 'NA'],
+                            keep_default_na=True
+                        )
 
-                    if self._config.get("resource_format") in ["XLSX", "XLS"]:
-                        # Use pandas read_excel with engine specification
-                        df = pd.read_excel(io.BytesIO(data), engine='openpyxl')
-                        self._rows_data = df.to_dict('records')
-                        self._config["xlsx_columns"] = list(df.columns)
-                    elif self._config.get("resource_format") == "CSV":
-                        _LOGGER.debug("Processing CSV data")
+                    # Cleanup column names
+                    df.columns = [str(col).strip() for col in df.columns]
+                    # Remove completely empty rows
+                    df = df.dropna(how='all')
+
+                    self._rows_data = df.to_dict('records')
+                    self._config["xlsx_columns"] = list(df.columns)
+
+                    _LOGGER.debug("Excel data loaded. Shape: %s", df.shape)
+
+                # Create options from Excel rows
+                for idx, row in enumerate(self._rows_data):
+                    row_label = self._format_excel_row_label(
+                        idx, row, self._config["xlsx_columns"])
+                    if row_label:  # Include solo righe con etichette valide
+                        options.append({
+                            "value": f"row_{idx}",
+                            "label": row_label
+                        })
+
+            elif self._config.get("resource_format") == "CSV":
+                if not self._rows_data:
+                    data = await client.get_resource_binary(self._config["resource_url"])
+                    try:
+                        # Prova prima UTF-8 con BOM
+                        text_data = data.decode('utf-8-sig')
+                    except UnicodeDecodeError:
                         try:
                             text_data = data.decode('utf-8')
-                            _LOGGER.debug("CSV data preview: %s",
-                                          text_data[:200])
-                            df = pd.read_csv(io.StringIO(text_data))
-                            _LOGGER.debug("CSV columns: %s",
-                                          df.columns.tolist())
-                            self._rows_data = df.to_dict('records')
-                            self._config["xlsx_columns"] = list(df.columns)
-                            _LOGGER.debug("Loaded %d rows from CSV",
-                                          len(self._rows_data))
-                        except Exception as err:
-                            _LOGGER.exception("Error processing CSV: %s", err)
-                            errors["base"] = "csv_processing_error"
-                    elif self._config.get("resource_format") == "XML":
-                        # Parsing XML con xmltodict
-                        _LOGGER.debug("Processing XML data")
-                        xml_dict = xmltodict.parse(data.decode('utf-8'))
-                        _LOGGER.debug("XML parsed structure: %s",
-                                      json.dumps(xml_dict, indent=2))
+                        except UnicodeDecodeError:
+                            text_data = data.decode('latin-1')
 
-                        # Trova la lista principale
-                        found_list = None
-                        if 'root' in xml_dict and 'item' in xml_dict['root']:
-                            _LOGGER.debug(
-                                "Found standard XML structure with root/item")
-                            found_list = xml_dict['root']['item']
-                        else:
-                            _LOGGER.debug("Searching for deepest list in XML")
-                            found_list = find_list(xml_dict)
+                    try:
+                        df = pd.read_csv(
+                            io.StringIO(text_data),
+                            sep=None,
+                            engine='python',
+                            na_values=['', 'N/A', 'NA', '#N/A'],
+                            keep_default_na=True,
+                            on_bad_lines='skip'
+                        )
+                        df.columns = [str(col).strip() for col in df.columns]
+                        df = df.dropna(how='all')
 
-                        if found_list:
-                            _LOGGER.debug(
-                                "Found list with %d items", len(found_list))
-                            self._rows_data = found_list
-                            if self._rows_data:
-                                self._config["xlsx_columns"] = list(
-                                    self._rows_data[0].keys())
-                                _LOGGER.debug(
-                                    "Extracted columns: %s", self._config["xlsx_columns"])
-                        else:
-                            _LOGGER.error("No suitable list found in XML")
-                            errors["base"] = "invalid_xml_format"
-                    else:
-                        df = pd.read_excel(io.BytesIO(data))
                         self._rows_data = df.to_dict('records')
                         self._config["xlsx_columns"] = list(df.columns)
-            # Gestione selezione e avanzamento
 
-            # Create options from the loaded data
-            for idx, row in enumerate(self._rows_data):
-                # For Excel/CSV, use first column as name if available
-                if self._config.get("resource_format") in ["XLSX", "XLS", "CSV"]:
-                    name = self._format_excel_row_label(
+                    except Exception as err:
+                        _LOGGER.exception("Error parsing CSV: %s", err)
+                        errors["base"] = "csv_parse_error"
+                        return self.async_show_form(
+                            step_id="rows",
+                            data_schema=vol.Schema({}),
+                            errors=errors
+                        )
+
+                # Create options from CSV rows
+                for idx, row in enumerate(self._rows_data):
+                    row_label = self._format_excel_row_label(
                         idx, row, self._config["xlsx_columns"])
-                else:
-                    name = str(row.get("name", f"Row {idx+1}"))
+                    if row_label:
+                        options.append({
+                            "value": f"row_{idx}",
+                            "label": row_label
+                        })
 
-                options.append({
-                    "value": f"row_{idx}",
-                    "label": name
-                })
+            if not options:
+                errors["base"] = "no_valid_rows"
+                return self.async_show_form(
+                    step_id="rows",
+                    data_schema=vol.Schema({}),
+                    errors=errors
+                )
 
             # Sort options
-            options = self._sort_options(options)
-            options = self._filter_na_values(options)
+            options = sorted(options, key=lambda x: x.get("label", ""))
 
             if user_input is not None:
                 selected_row = user_input.get("row")
@@ -574,19 +700,27 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     selected_index = int(selected_row.split("_")[1])
                     self._config["selected_rows"] = [selected_index]
                     return await self.async_step_fields()
-                else:
-                    errors["base"] = "no_rows_selected"
+
+            return self.async_show_form(
+                step_id="rows",
+                data_schema=vol.Schema({
+                    vol.Required("row"): vol.In({
+                        opt["value"]: opt["label"] for opt in options
+                    })
+                }),
+                errors=errors if errors else None,
+                description_placeholders={"api_url": self._api_url_link()}
+            )
+
         except Exception as error:
             _LOGGER.exception("Unexpected exception in rows step: %s", error)
             errors["base"] = "unknown"
-        return self.async_show_form(
-            step_id="rows",
-            data_schema=vol.Schema({
-                vol.Required("row"): vol.In({opt["value"]: opt["label"] for opt in options})
-            }),
-            errors=errors if errors else None,
-            description_placeholders={"api_url": self._api_url_link()}
-        )
+            return self.async_show_form(
+                step_id="rows",
+                data_schema=vol.Schema({}),
+                errors=errors,
+                description_placeholders={"api_url": self._api_url_link()}
+            )
 
     async def async_step_fields(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle field selection step."""
@@ -595,19 +729,14 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         processed_fields = set()
         try:
             # Determina le colonne in base al formato
-            if self._config.get("resource_format") in ["XLSX", "XLS"]:
+            if self._config.get("resource_format") in ["XLSX", "XLS", "CSV"]:
                 columns = self._config.get("xlsx_columns", [])
-            else:  # JSON
-                # Per JSON, considera le chiavi della riga selezionata come colonne
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
-                columns = list(selected_row.keys())
-            selected_row = self._rows_data[self._config["selected_rows"][0]]
-            # Logica comune per generazione delle opzioni
-            if self._config.get("resource_format") in ["XLSX", "XLS"]:
+
                 for col_idx, column in enumerate(columns):
-                    if not column.startswith("Unnamed"):
+                    if not str(column).startswith("Unnamed"):  # Skip unnamed columns
                         value = selected_row.get(column, "")
-                        if pd.notna(value):
+                        if pd.notna(value):  # Check if value is not NaN
                             formatted_label = self._format_excel_column_label(
                                 col_idx, column)
                             options.append({
@@ -615,6 +744,8 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "label": f"{formatted_label}: {value}"
                             })
             else:  # JSON
+                selected_row = self._rows_data[self._config["selected_rows"][0]]
+
                 # Process measurement fields if available
                 measurements = selected_row.get("measurements", [])
                 if isinstance(measurements, list):
@@ -630,6 +761,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     options = self._sort_options(options)
                     options = self._filter_na_values(options)
                     processed_fields.add(code)
+
                 # Process regular fields not already handled as measurements
                 for field_name, field_value in selected_row.items():
                     if (field_name != "measurements" and
@@ -639,6 +771,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "value": f"field:{field_name}",
                             "label": f"{field_name}: {field_value}"
                         })
+
             if user_input is not None:
                 selected = user_input.get("fields", [])
                 if not selected:
@@ -653,32 +786,39 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             pass
                     if selected_fields:
                         self._config["selected_fields"] = selected_fields
-                        # Calcola il numero totale di sensori che verranno creati
-                        total_sensors_count = len(selected_fields)
-                        if total_sensors_count > 100:
-                            # Mostra un avviso se verranno creati troppi sensori
-                            errors["base"] = "too_many_sensors"
-                        else:
-                            return await self.async_step_confirm()
+                        return await self.async_step_confirm()
+
+            if not options:
+                errors["base"] = "no_fields_available"
+                return self.async_show_form(
+                    step_id="fields",
+                    data_schema=vol.Schema({}),
+                    errors=errors
+                )
+
+            return self.async_show_form(
+                step_id="fields",
+                data_schema=vol.Schema({
+                    vol.Required("fields", default=[]): selector({
+                        "select": {
+                            "multiple": True,
+                            "options": options,
+                            "mode": "dropdown"
+                        }
+                    })
+                }),
+                errors=errors if errors else None,
+                description_placeholders={"api_url": self._api_url_link()}
+            )
+
         except Exception as error:
             _LOGGER.exception("Unexpected exception in fields step: %s", error)
             errors["base"] = "unknown"
-        title = "Seleziona Colonna" if self._config.get("resource_format") in [
-            "XLSX", "XLS"] else "Seleziona Campo"
-        return self.async_show_form(
-            step_id="fields",
-            data_schema=vol.Schema({
-                vol.Required("fields", default=[]): selector({
-                    "select": {
-                        "multiple": True,
-                        "options": options,
-                        "mode": "dropdown"
-                    }
-                })
-            }),
-            errors=errors if errors else None,
-            description_placeholders={"api_url": self._api_url_link()}
-        )
+            return self.async_show_form(
+                step_id="fields",
+                data_schema=vol.Schema({}),
+                errors=errors
+            )
 
     async def async_step_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle final confirmation step.
@@ -780,17 +920,19 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     if field_type == "measurement":
                         measurement = next(
                             (m for m in row.get("measurements", [])
-                             if m.get("code", "").lower() == key.lower()),
+                            if m.get("code", "").lower() == key.lower()),
                             None
                         )
                         if measurement and "description" in measurement:
-                            sensor_field = (f"{key} ({measurement.get('description', key)})"
-                                            .lower().replace(" ", "_"))
+                            # Se c'è una descrizione, usa SOLO la descrizione e ignora il codice (q)
+                            sensor_field = self._sanitize_entity_name(measurement["description"])
                         else:
-                            sensor_field = key.lower()
+                            # Solo se non c'è descrizione, usa il codice
+                            sensor_field = self._sanitize_entity_name(key)
                     else:
-                        sensor_field = self._sanitize_entity_name(key.lower())
-                    sensor_field = re.sub(r'_+', '_', sensor_field).strip('_')
+                        # Per campi non-measurement
+                        sensor_field = self._sanitize_entity_name(key)
+                        
                     entity_id = f"sensor.provbz_{row_name_clean}_{sensor_field}"
                     value = row.get(key, "N/A")
                     sensor_previews.append(f"{entity_id}: {value}")

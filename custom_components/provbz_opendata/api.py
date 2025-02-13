@@ -155,53 +155,26 @@ class OpenDataBolzanoApiClient:
             raise
 
     async def get_resource_data(self, url: str) -> dict[str, Any] | list[dict[str, Any]]:
-        """Get data from a resource URL.
-
-        Handles both direct JSON resources and WFS services by converting
-        WFS responses to GeoJSON format.
-
-        Args:
-            url: Resource URL to fetch data from
-
-        Returns:
-            Resource data as dictionary or list
-
-        Raises:
-            CannotConnect: If fetching resource data fails
-        """
+        """Get data from a resource URL."""
         try:
-            async with async_timeout.timeout(10):
+            async with async_timeout.timeout(30):
                 _LOGGER.debug("Fetching resource data from URL: %s", url)
                 async with self._session.get(url) as response:
                     response.raise_for_status()
-
                     content_type = response.headers.get('Content-Type', '')
 
-                    if 'excel' in content_type or 'xls' in content_type:
-                        _LOGGER.debug("Excel file detected, skipping JSON parsing")
+                    if 'excel' in content_type.lower() or 'xls' in content_type.lower():
+                        _LOGGER.debug(
+                            "Excel file detected, skipping JSON parsing")
                         return {"rows": []}
 
                     if 'xml' in content_type.lower():
-                        _LOGGER.debug("XML response detected, parsing as WFS")
-                        # Convert WFS to JSON request
-                        url_parts = list(urlparse(url))
-                        query = dict(parse_qs(url_parts[4]))
-                        query.update({
-                            'REQUEST': 'GetFeature',
-                            'OUTPUTFORMAT': 'application/json'
-                        })
-                        url_parts[4] = urlencode(query, True)
-                        new_url = urlunparse(url_parts)
+                        _LOGGER.debug("XML response detected")
+                        return await response.text()
 
-                        # Make JSON request
-                        async with self._session.get(new_url) as json_response:
-                            json_response.raise_for_status()
-                            data = await json_response.json()
-                            return data.get('features', [])
-                    else:
-                        data = await response.json()
-                        _LOGGER.debug("Resource data retrieved successfully")
-                        return data
+                    data = await response.json()
+                    _LOGGER.debug("Resource data retrieved successfully")
+                    return data
 
         except aiohttp.ClientError as err:
             _LOGGER.error("Error fetching resource data: %s", err)
@@ -210,7 +183,8 @@ class OpenDataBolzanoApiClient:
             _LOGGER.error("Timeout fetching resource data: %s", err)
             raise CannotConnect from err
         except Exception as err:
-            _LOGGER.error("Unexpected error fetching resource data: %s", err)
+            _LOGGER.error(
+                "Unexpected error fetching resource data: %s", err)
             raise CannotConnect from err
 
     async def get_wfs_features(self, wfs_url: str, layer_name: str) -> list:
