@@ -42,7 +42,8 @@ SUPPORTED_FORMATS = {
     "WFS": "Web Feature Service",
     "XLSX": "Office Open XML Spreadsheet",
     "XLS": "Excel Binary File Format",
-    "CSV": "Comma-Separated Values"
+    "CSV": "Comma-Separated Values",
+    "XML": "Extensible Markup Language"
 }
 
 # Default configuration values

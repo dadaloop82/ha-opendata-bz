@@ -17,6 +17,8 @@ import pandas as pd
 import io
 import os
 import json
+import aiofiles
+import xmltodict
 from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.const import CONF_NAME
@@ -68,58 +70,89 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._translations: dict[str, Any] = {}
 
     def _sanitize_entity_name(self, name: str) -> str:
-        """
-        Sanitize a string to be used as an entity name in Home Assistant.
-        """
+        """Sanitizza una stringa per uso come nome entità in Home Assistant."""
         name = str(name).lower()
-        name = re.sub(r'[()[\]_\-\s]+', '_', name)
+
+        name = re.sub(r'\([^)]*\)', '', name)
+
         name = re.sub(r'[^a-z0-9]+', '_', name)
+
         name = re.sub(r'_+', '_', name)
-        name = re.sub(r'^[^a-z]+', '', name)
-        name = name[:64]
-        if not name:
-            name = 'unnamed'
+
         name = name.strip('_')
-        return name
+        return name[:64] or 'unnamed'
+
+    def _format_excel_row_label(self, row_idx: int, row_data: dict, columns: list) -> str:
+        """Formatta l'etichetta per una riga Excel."""
+        # Non mostrare righe con primo valore nan
+        first_col = columns[0]
+        first_val = row_data.get(first_col, '')
+        if pd.isna(first_val):
+            return None
+
+        # Prendi solo le prime 5 colonne
+        preview_columns = columns[:5]
+        data_preview = []
+        for col in preview_columns:
+            value = str(row_data.get(col, '')).strip()
+            if value and pd.notna(value):
+                data_preview.append(f"{value}")
+
+        row_num = row_idx + 1
+        preview = ' | '.join(data_preview)
+        return f"Riga {row_num} - {preview}"
+
+    def _format_excel_column_label(self, col_idx: int, col_name: str, value: str) -> str:
+        """Formatta l'etichetta per una colonna Excel."""
+        def get_column_letter(n):
+            string = ""
+            while n >= 0:
+                n, remainder = divmod(n, 26)
+                string = chr(65 + remainder) + string
+                n -= 1
+            return string
+
+        col_letter = get_column_letter(col_idx)
+        return f"{col_letter} - {col_name}"
 
     def _clean_resource_name(self, name: str, resource_format: str) -> str:
-        """
-        Rimuove il formato (JSON), (XLSX) ecc. dal nome della risorsa
-        """
-        name = re.sub(rf'\s*\({resource_format}\)',
+        name = re.sub(r'\s*\(Formato\s+' + resource_format +
+                      r'\)\s*$', '', name, flags=re.IGNORECASE)
+        name = re.sub(r'\s*\(' + resource_format + r'\)\s*$',
                       '', name, flags=re.IGNORECASE)
         return name.strip()
 
-    @property
-    def translations(self) -> dict[str, Any]:
-        """Get translations for current language."""
+    async def _fetch_translations(self) -> dict[str, Any]:
+        """Fetch translations for current language."""
         current_lang = self._config.get(CONF_LANGUAGE, "en")
         if not self._translations.get(current_lang):
             try:
                 component_dir = os.path.dirname(__file__)
                 translation_path = os.path.join(
                     component_dir, "translations", f"{current_lang}.json")
-                if os.path.exists(translation_path):
-                    with open(translation_path, "r", encoding="utf-8") as file:
-                        self._translations[current_lang] = json.load(
-                            file).get("config", {})
-                else:
-                    fallback_path = os.path.join(
-                        component_dir, "translations", "en.json")
-                    if os.path.exists(fallback_path):
-                        with open(fallback_path, "r", encoding="utf-8") as file:
-                            self._translations[current_lang] = json.load(
-                                file).get("config", {})
-                    else:
-                        _LOGGER.warning(
-                            "No translation file found for language %s and no fallback available",
-                            current_lang
-                        )
-                        self._translations[current_lang] = {}
+
+                # Usa aiofiles per leggere in modo asincrono
+                async with aiofiles.open(translation_path, "r", encoding="utf-8") as file:
+                    content = await file.read()
+                    translations = json.loads(content)
+                    self._translations[current_lang] = translations.get(
+                        "config", {})
             except Exception as err:
                 _LOGGER.error("Error loading translations: %s", err)
                 self._translations[current_lang] = {}
         return self._translations[current_lang]
+
+    @property
+    def translations(self) -> Any:
+        """
+        Proprietà che restituisce le traduzioni in modo asincrono.
+        """
+        async def _get_translations():
+            # Usa il metodo asincrono esistente per recuperare le traduzioni
+            return await self._fetch_translations()
+
+        # Restituisci la coroutine da eseguire
+        return _get_translations()
 
     @property
     def _api_url(self) -> str:
@@ -148,6 +181,14 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         return f'<a href="{self._current_api_url}" target="_blank">{self._current_api_url}</a>'
 
+    def _sort_options(self, options: list[dict]) -> list[dict]:
+        """Sort options by label, case-insensitive."""
+        return sorted(options, key=lambda x: x['label'].lower())
+
+    def _filter_na_values(self, options: list[dict]) -> list[dict]:
+        """Filter out options with N/A values."""
+        return [opt for opt in options if 'N/A' not in str(opt.get('label', ''))]
+
     async def async_step(self, step_id: str, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle a step in the configuration flow.
         Args:
@@ -174,16 +215,20 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._config.update(user_input)
             return await self.async_step_group()
+
         supported_types = ", ".join(SUPPORTED_FORMATS.values())
         try:
+
             manifest_path = os.path.join(
                 os.path.dirname(__file__), "manifest.json")
-            with open(manifest_path) as manifest_file:
-                manifest = json.load(manifest_file)
+            async with aiofiles.open(manifest_path, mode='r') as manifest_file:
+                content = await manifest_file.read()
+                manifest = json.loads(content)
                 version = manifest.get("version", "?.?.?")
         except Exception as err:
             _LOGGER.error("Error reading manifest version: %s", err)
             version = "?.?.?"
+
         return self.async_show_form(
             step_id="language",
             data_schema=vol.Schema({
@@ -285,13 +330,14 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         options = []
         supported_resources = []
         unsupported_resources = []
+        translations = await self.translations
         try:
             client = OpenDataBolzanoApiClient(self.hass)
             package_id = self._config[CONF_PACKAGE_ID]
             package_details = await client.get_package_details(package_id)
             self._resources = package_details.get("resources", [])
-            format_label = self.translations["resource_labels"]["format"]
-            unavailable_label = self.translations["resource_labels"]["unavailable"]
+            format_label = translations["resource_labels"]["format"]
+            unavailable_label = translations["resource_labels"]["unavailable"]
             for resource in self._resources:
                 resource_format = resource.get("format", "").upper()
                 resource_name = resource.get("name", resource["id"])
@@ -315,7 +361,10 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             name=clean_name
                         )
                     })
-                options = supported_resources + unsupported_resources
+            supported_resources = self._sort_options(supported_resources)
+            unsupported_resources = self._sort_options(
+                unsupported_resources)
+            options = supported_resources + unsupported_resources
             if user_input is not None:
                 selected_resource_id = user_input.get(CONF_RESOURCE_ID)
                 if not selected_resource_id.startswith("not_available_"):
@@ -343,21 +392,57 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         self._config["resource_url"] = self._current_api_url
                         # Handle different formats
                         if self._config["resource_format"] == "WFS":
-                            query.update({
-                                "SERVICE": ["WFS"],
-                                "VERSION": ["2.0.0"],
-                                "REQUEST": ["GetFeature"],
-                                "OUTPUTFORMAT": ["application/json"],
-                                "TYPENAME": [resource.get("name", "")],
-                                "SRSNAME": ["EPSG:4326"]
-                            })
-                            new_query = urlencode(query, doseq=True)
-                            self._current_api_url = urlunparse((
-                                parsed.scheme, parsed.netloc, parsed.path,
-                                parsed.params, new_query, parsed.fragment
-                            ))
-                            self._config["resource_url"] = self._current_api_url
-                            return await self.async_step_confirm()
+                            try:
+                                # Assicurati che l'URL WFS sia corretto
+                                parsed = urlparse(self._current_api_url)
+                                query = parse_qs(parsed.query)
+                                typename = resource.get('name', '')
+                                _LOGGER.debug("WFS typename: %s", typename)
+                                if not typename:
+                                    _LOGGER.error("No typename found for WFS")
+                                    errors["base"] = "no_wfs_typename"
+                                    return
+                                # Rimuovi parametri duplicati
+                                query.pop('Service', None)
+                                query.pop('Request', None)
+                                query.pop('VERSION', None)
+                                # Aggiungi i parametri corretti
+                                query.update({
+                                    'SERVICE': ['WFS'],
+                                    'VERSION': ['2.0.0'],
+                                    'REQUEST': ['GetFeature'],
+                                    'OUTPUTFORMAT': ['application/json'],
+                                    'TYPENAME': [resource.get('name', '')],
+                                    'SRSNAME': ['EPSG:4326']
+                                })
+                                new_query = urlencode(query, doseq=True)
+                                self._current_api_url = urlunparse((
+                                    parsed.scheme, parsed.netloc, parsed.path,
+                                    parsed.params, new_query, parsed.fragment
+                                ))
+
+                                _LOGGER.debug(
+                                    "Requesting WFS URL: %s", self._current_api_url)
+                                wfs_data = await client.get_resource_data(self._current_api_url)
+                                _LOGGER.debug("WFS Response: %s", wfs_data)
+                                if isinstance(wfs_data, dict):
+                                    features = wfs_data.get("features", [])
+                                    if features:
+                                        self._rows_data = features
+                                        return await self.async_step_confirm()
+                                    else:
+                                        _LOGGER.error(
+                                            "No features found in WFS response")
+                                        errors["base"] = "no_wfs_features"
+                                else:
+                                    _LOGGER.error(
+                                        "Invalid WFS response format")
+                                    errors["base"] = "invalid_wfs_format"
+                            except Exception as error:
+                                _LOGGER.exception(
+                                    "Error processing WFS data: %s", error)
+                                errors["base"] = "wfs_error"
+
                         elif self._config["resource_format"] in ["JSON", "XLSX", "XLS"]:
                             # Tutti i formati gestiti vanno allo step rows
                             return await self.async_step_rows()
@@ -404,32 +489,85 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         "value": f"row_{idx}",
                         "label": name
                     })
-            elif self._config.get("resource_format") in ["XLSX", "XLS", "CSV"]:
+            elif self._config.get("resource_format") in ["XLSX", "XLS", "CSV", "XML"]:
                 # Fetch Excel data if not already loaded
                 if not self._rows_data:
-                    xlsx_data = await client.get_resource_binary(self._config["resource_url"])
-                    if self._config.get("resource_format") == "CSV":
-                        df = pd.read_csv(io.StringIO(
-                            xlsx_data.decode('utf-8')))
+                    data = await client.get_resource_binary(self._config["resource_url"])
+
+                    if self._config.get("resource_format") in ["XLSX", "XLS"]:
+                        # Use pandas read_excel with engine specification
+                        df = pd.read_excel(io.BytesIO(data), engine='openpyxl')
+                        self._rows_data = df.to_dict('records')
+                        self._config["xlsx_columns"] = list(df.columns)
+                    elif self._config.get("resource_format") == "CSV":
+                        _LOGGER.debug("Processing CSV data")
+                        try:
+                            text_data = data.decode('utf-8')
+                            _LOGGER.debug("CSV data preview: %s",
+                                          text_data[:200])
+                            df = pd.read_csv(io.StringIO(text_data))
+                            _LOGGER.debug("CSV columns: %s",
+                                          df.columns.tolist())
+                            self._rows_data = df.to_dict('records')
+                            self._config["xlsx_columns"] = list(df.columns)
+                            _LOGGER.debug("Loaded %d rows from CSV",
+                                          len(self._rows_data))
+                        except Exception as err:
+                            _LOGGER.exception("Error processing CSV: %s", err)
+                            errors["base"] = "csv_processing_error"
+                    elif self._config.get("resource_format") == "XML":
+                        # Parsing XML con xmltodict
+                        _LOGGER.debug("Processing XML data")
+                        xml_dict = xmltodict.parse(data.decode('utf-8'))
+                        _LOGGER.debug("XML parsed structure: %s",
+                                      json.dumps(xml_dict, indent=2))
+
+                        # Trova la lista principale
+                        found_list = None
+                        if 'root' in xml_dict and 'item' in xml_dict['root']:
+                            _LOGGER.debug(
+                                "Found standard XML structure with root/item")
+                            found_list = xml_dict['root']['item']
+                        else:
+                            _LOGGER.debug("Searching for deepest list in XML")
+                            found_list = find_list(xml_dict)
+
+                        if found_list:
+                            _LOGGER.debug(
+                                "Found list with %d items", len(found_list))
+                            self._rows_data = found_list
+                            if self._rows_data:
+                                self._config["xlsx_columns"] = list(
+                                    self._rows_data[0].keys())
+                                _LOGGER.debug(
+                                    "Extracted columns: %s", self._config["xlsx_columns"])
+                        else:
+                            _LOGGER.error("No suitable list found in XML")
+                            errors["base"] = "invalid_xml_format"
                     else:
-                        df = pd.read_excel(io.BytesIO(xlsx_data))
-                    self._rows_data = df.to_dict('records')
-                    self._config["xlsx_columns"] = list(df.columns)
-                # Create options for Excel rows
-                first_column = self._config["xlsx_columns"][0]
-                for idx, row in enumerate(self._rows_data):
-                    first_value = row.get(first_column)
-                    if pd.notna(first_value) and first_value:
-                        preview_columns = [
-                            str(row.get(col, 'vuoto')).replace('nan', 'vuoto')
-                            for col in self._config["xlsx_columns"][1:6]
-                            if not col.startswith('Unnamed')
-                        ]
-                        options.append({
-                            "value": f"row_{idx}",
-                            "label": f"[{first_value}] {first_value} | {' | '.join(preview_columns)}"
-                        })
+                        df = pd.read_excel(io.BytesIO(data))
+                        self._rows_data = df.to_dict('records')
+                        self._config["xlsx_columns"] = list(df.columns)
             # Gestione selezione e avanzamento
+
+            # Create options from the loaded data
+            for idx, row in enumerate(self._rows_data):
+                # For Excel/CSV, use first column as name if available
+                if self._config.get("resource_format") in ["XLSX", "XLS", "CSV"]:
+                    name = self._format_excel_row_label(
+                        idx, row, self._config["xlsx_columns"])
+                else:
+                    name = str(row.get("name", f"Row {idx+1}"))
+
+                options.append({
+                    "value": f"row_{idx}",
+                    "label": name
+                })
+
+            # Sort options
+            options = self._sort_options(options)
+            options = self._filter_na_values(options)
+
             if user_input is not None:
                 selected_row = user_input.get("row")
                 if selected_row:
@@ -466,15 +604,15 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             selected_row = self._rows_data[self._config["selected_rows"][0]]
             # Logica comune per generazione delle opzioni
             if self._config.get("resource_format") in ["XLSX", "XLS"]:
-                # Excel: mostra le colonne come opzioni
-                for column in columns:
-                    # Salta le colonne senza nome
+                for col_idx, column in enumerate(columns):
                     if not column.startswith("Unnamed"):
                         value = selected_row.get(column, "")
-                        if pd.notna(value):  # Mostra solo colonne con valori
+                        if pd.notna(value):
+                            formatted_label = self._format_excel_column_label(
+                                col_idx, column)
                             options.append({
                                 "value": f"field:{column}",
-                                "label": f"{column}: {value}"
+                                "label": f"{formatted_label}: {value}"
                             })
             else:  # JSON
                 # Process measurement fields if available
@@ -489,7 +627,9 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "value": f"measurement:{code}",
                                 "label": f"{code} ({description}): {value}"
                             })
-                            processed_fields.add(code)
+                    options = self._sort_options(options)
+                    options = self._filter_na_values(options)
+                    processed_fields.add(code)
                 # Process regular fields not already handled as measurements
                 for field_name, field_value in selected_row.items():
                     if (field_name != "measurements" and
@@ -573,7 +713,25 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         # Prepare preview based on resource type
         if self._config.get("resource_format", "").upper() == "WFS":
-            total_features = len(self._rows_data)
+            wfs_features = self._rows_data[:500]
+            total_features = len(wfs_features)
+
+            if total_features == 0:
+                errors = {"base": "no_wfs_features"}
+                return self.async_show_form(
+                    step_id="confirm",
+                    data_schema=vol.Schema({}),
+                    errors=errors,
+                    description_placeholders={
+                        "api_url": self._api_url_link(),
+                        "fields_preview": "Nessun dato geografico rilevato nel servizio WFS"
+                    }
+                )
+
+            if total_features > 500:
+                preview_text = f"Trovate {total_features} features. Verranno utilizzate solo le prime 500 features per limitare il carico di sistema."
+            else:
+                preview_text = f"Verranno creati {total_features} sensori WFS"
 
             if total_features > 100:
                 errors = {"base": "too_many_sensors"}
@@ -592,7 +750,9 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
                 selected_fields = self._config["selected_fields"]
-                preview_format = self.translations["step"]["confirm"]["previews"]["entity"]
+                translations = await self._fetch_translations()
+                preview_format = translations.get("step", {}).get("confirm", {}).get(
+                    "previews", {}).get("entity", "{entity_id}: {value}")
                 preview_text = []
                 base_name = str(selected_row.get(
                     list(selected_row.keys())[0], ''))
@@ -608,7 +768,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 preview_text = "\n".join(preview_text)
             except Exception as err:
                 _LOGGER.error("Error creating preview: %s", err)
-                preview_text = self.translations["previews"]["error"]
+                preview_text = await self.translations["previews"]["error"]
         else:
             # Generate preview for JSON sensors
             sensor_previews = []

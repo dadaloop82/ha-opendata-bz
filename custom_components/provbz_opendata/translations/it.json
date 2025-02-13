@@ -15,6 +15,10 @@
           "language": "Lingua dei dati"
         }
       },
+      "xml": {
+        "title": "Selezione Elemento XML",
+        "description": "Seleziona l'elemento da monitorare nel file XML.\nViene mostrata un'anteprima per aiutarti nella selezione."
+      },
       "group": {
         "title": "Selezione Gruppo",
         "description": "I dati sono organizzati in gruppi tematici.\nSeleziona il gruppo che contiene i dati che ti interessano.\nQuesta scelta determinerà quali dataset saranno disponibili nel prossimo passaggio.\n\nI dati per la configurazione vengono recuperati in tempo reale dall'API fornita e il caricamento potrebbe richiedere alcuni secondi.",
@@ -71,7 +75,9 @@
       "no_fields_selected": "Seleziona un campo",
       "no_packages": "Nessun dataset disponibile nel gruppo selezionato",
       "no_json_resources": "Nessuna risorsa disponibile nel dataset",
-      "unknown": "Errore inaspettato"
+      "unknown": "Errore inaspettato",
+      "no_xml_resources": "Nessun elemento trovato nel file XML",
+      "xml_parsing_error": "Errore durante l'elaborazione del file XML"
     },
     "loading_errors": {
       "default_groups": "Errore nel caricamento dei gruppi",
