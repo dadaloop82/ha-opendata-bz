@@ -67,6 +67,10 @@ WMS_MAP_DEFAULTS = {
 XLSX_SUPPORTED_FORMATS = ["XLSX", "XLS"]
 DEFAULT_XLSX_SCAN_INTERVAL = 3600  # 1 ora
 
+CONF_EXCEL_ROW = "excel_row"
+CONF_EXCEL_COLUMN = "excel_column"
+CONF_SENSOR_NAME = "sensor_name"
+
 # Multilingual translations for data groups
 # These translations are used to provide user-friendly names for data categories
 GROUP_TRANSLATIONS = {

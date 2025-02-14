@@ -63,6 +63,21 @@
           "wfs": "Verrà creato un tracker WFS",
           "error": "Errore nella creazione dell'anteprima"
         }
+      },
+      "excel_coordinates": {
+        "title": "Seleziona la cella Excel da monitorare",
+        "description": "Puoi scaricare il file Excel qui: {url}\n\nInserisci le coordinate della cella che vuoi monitorare:",
+        "data": {
+          "excel_column": "Lettera della colonna (es. A, B, C, AA)",
+          "excel_row": "Numero della riga"
+        }
+      },
+      "excel_confirm": {
+        "title": "Conferma selezione cella Excel",
+        "description": "Hai selezionato la cella {cell} che contiene il valore: {value}\n\nInserisci un nome descrittivo per questo sensore:",
+        "data": {
+          "sensor_name": "Nome del sensore"
+        }
       }
     },
     "error": {
@@ -77,7 +92,9 @@
       "no_json_resources": "Nessuna risorsa disponibile nel dataset",
       "unknown": "Errore inaspettato",
       "no_xml_resources": "Nessun elemento trovato nel file XML",
-      "xml_parsing_error": "Errore durante l'elaborazione del file XML"
+      "xml_parsing_error": "Errore durante l'elaborazione del file XML",
+      "invalid_coordinates": "Coordinate non valide. Verifica che:\n- La lettera della colonna sia corretta (A-Z, AA-ZZ)\n- Il numero della riga esista nel file\n- La cella contenga un valore",
+      "empty_cell": "La cella selezionata è vuota o contiene un valore non valido.\nSeleziona una cella che contiene un dato numerico."
     },
     "loading_errors": {
       "default_groups": "Errore nel caricamento dei gruppi",
@@ -100,8 +117,5 @@
       "format": "[{format}] {name}",
       "unavailable": "🚫 [{format}] {name}"
     }
-  },
-  "labels": {
-    "format": "[{format}] {name}"
   }
 }

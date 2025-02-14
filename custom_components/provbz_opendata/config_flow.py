@@ -33,6 +33,9 @@ from .const import (
     SUPPORTED_LANGUAGES,
     GROUP_TRANSLATIONS,
     BASE_API_URL,
+    CONF_EXCEL_ROW,
+    CONF_EXCEL_COLUMN,
+    CONF_SENSOR_NAME
 )
 from .api import OpenDataBolzanoApiClient, CannotConnect
 from .const import SUPPORTED_FORMATS
@@ -228,7 +231,6 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         "api_url": self._api_url_link()  # Aggiungi questo!
                     }
                 )
-
 
             return self.async_show_form(
                 step_id="fields",
@@ -581,8 +583,9 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 _LOGGER.exception(
                                     "Error processing WFS data: %s", error)
                                 errors["base"] = "wfs_error"
-
-                        elif self._config["resource_format"] in ["JSON", "XLSX", "XLS", "XML", "CSV"]:
+                        if self._config["resource_format"] in ["XLSX"]:
+                            return await self.async_step_excel_coordinates()
+                        elif self._config["resource_format"] in ["JSON", "XLS", "XML", "CSV"]:
                             # Tutti i formati gestiti vanno allo step rows
                             return await self.async_step_rows()
         except CannotConnect:
@@ -1120,5 +1123,115 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders={
                 "api_url": self._api_url_link(),
                 "fields_preview": preview_text
+            }
+        )
+
+    async def async_step_excel_coordinates(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Handle Excel cell coordinates input."""
+        errors = {}
+        api = OpenDataBolzanoApiClient(self.hass)
+
+        if user_input is not None:
+            try:
+                column = user_input[CONF_EXCEL_COLUMN].upper()
+                row = int(user_input[CONF_EXCEL_ROW])
+                
+                # Ottieni i dati dall'Excel con opzioni specifiche
+                excel_data = await api.get_resource_binary(self._config["resource_url"])
+                data = pd.read_excel(
+                    io.BytesIO(excel_data),
+                    engine='openpyxl',
+                    na_values=['', 'N/A', 'NA', '#N/A'],
+                    keep_default_na=False,  # Non convertire automaticamente in NaN
+                    dtype=str  # Leggi tutto come stringa inizialmente
+                )
+                
+                # Converti la lettera della colonna in indice
+                col_idx = 0
+                for i, letter in enumerate(reversed(column)):
+                    col_idx += (ord(letter) - ord('A') + 1) * (26 ** i)
+                col_idx -= 1
+                
+                # Ottieni il valore della cella
+                try:
+                    if row - 1 < len(data) and col_idx < len(data.columns):
+                        value = data.iloc[row - 1, col_idx]
+                        # Pulisci il valore se è una stringa
+                        if isinstance(value, str):
+                            value = value.strip()
+                        # Se il valore è vuoto o NaN, solleva un errore
+                        if pd.isna(value) or value == '':
+                            errors["base"] = "empty_cell"
+                        else:
+                            self._config["excel_preview_value"] = str(value)
+                            self._config[CONF_EXCEL_ROW] = row
+                            self._config[CONF_EXCEL_COLUMN] = column
+                            return await self.async_step_excel_confirm()
+                    else:
+                        errors["base"] = "invalid_coordinates"
+                except IndexError:
+                    errors["base"] = "invalid_coordinates"
+            except ValueError as err:
+                _LOGGER.error("Error reading Excel cell: %s", err)
+                errors["base"] = "invalid_coordinates"
+            except Exception as err:
+                _LOGGER.error("Error reading Excel cell: %s", err)
+                errors["base"] = "invalid_coordinates"
+
+        resource_url = self._config.get("resource_url", "")
+        return self.async_show_form(
+            step_id="excel_coordinates",
+            data_schema=vol.Schema({
+                vol.Required(CONF_EXCEL_COLUMN, default="A"): str,
+                vol.Required(CONF_EXCEL_ROW, default=1): vol.All(
+                    vol.Coerce(int),
+                    vol.Range(min=1)
+                ),
+            }),
+            errors=errors,
+            description_placeholders={
+                "url": f'<a href="{resource_url}" target="_blank">Scarica il file Excel</a>'
+            }
+        )
+        
+    async def async_step_excel_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        """Confirm Excel cell selection and set sensor name."""
+        if user_input is not None:
+            # Aggiorna la configurazione con il nome del sensore
+            self._config[CONF_SENSOR_NAME] = user_input[CONF_SENSOR_NAME]
+
+            # Inizializza la configurazione in Home Assistant
+            self.hass.data.setdefault(DOMAIN, {})
+
+            # Prepara i dati di configurazione
+            config_data = dict(self._config)
+            config_data["unique_id"] = self.flow_id
+
+            # Memorizza la configurazione
+            self.hass.data[DOMAIN][self.flow_id] = {
+                "api": OpenDataBolzanoApiClient(self.hass),
+                "config": config_data
+            }
+
+            # Crea l'entry di configurazione
+            title = f"Excel {self._config[CONF_EXCEL_COLUMN]}{self._config[CONF_EXCEL_ROW]}"
+            return self.async_create_entry(
+                title=title,
+                data=config_data
+            )
+
+        preview_value = self._config.get("excel_preview_value", "N/A")
+        row = self._config.get(CONF_EXCEL_ROW)
+        column = self._config.get(CONF_EXCEL_COLUMN)
+        default_name = f"Excel {column}{row}"
+
+        return self.async_show_form(
+            step_id="excel_confirm",
+            data_schema=vol.Schema({
+                vol.Required(CONF_SENSOR_NAME, default=default_name): str,
+            }),
+            description_placeholders={
+                "cell": f"{column}{row}",
+                "value": preview_value,
             }
         )

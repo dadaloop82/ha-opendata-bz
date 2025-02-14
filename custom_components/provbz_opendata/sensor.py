@@ -55,10 +55,10 @@ async def async_setup_entry(
 
     entry_data = hass.data[DOMAIN][entry.entry_id]
     config = entry_data["config"]
-    
+
     # Determine the resource format and handle accordingly
     resource_format = config.get("resource_format", "").upper()
-    
+
     if resource_format in XLSX_SUPPORTED_FORMATS:
         await setup_xlsx_sensors(hass, entry, entry_data, async_add_entities)
     elif resource_format == "XML":
@@ -109,7 +109,7 @@ async def setup_standard_sensors(
     )
 
     coordinator.data = rows_data
-    
+
     entities = []
     selected_rows = config.get("selected_rows", [])
     selected_fields = config.get("selected_fields", [])
@@ -176,68 +176,51 @@ async def setup_xlsx_sensors(
     entry_data: dict,
     async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up sensors for XLSX data sources."""
+    """Set up sensors for Excel data sources."""
     api = entry_data["api"]
     config = entry_data["config"]
-    selected_row_idx = config["selected_rows"][0]  # Prendiamo l'indice della riga selezionata
-    selected_fields = config["selected_fields"]    # Prendiamo i campi selezionati
 
     async def async_update_xlsx_data():
-        """Fetch data from XLSX file."""
+        """Fetch data from Excel file."""
         try:
             url = config.get("resource_url")
             if not url:
                 _LOGGER.error("No resource URL found in config")
-                return []
+                return None
 
-            _LOGGER.debug("Fetching XLSX data from URL: %s", url)
+            _LOGGER.debug("Fetching Excel data from URL: %s", url)
             response = await api.get_resource_binary(url)
-            
-            df = pd.read_excel(io.BytesIO(response))
-            return df.to_dict('records')
+
+            return pd.read_excel(io.BytesIO(response))
 
         except Exception as err:
-            _LOGGER.error("Error fetching XLSX data: %s", err)
-            return []
+            _LOGGER.error("Error fetching Excel data: %s", err)
+            return None
 
     coordinator = DataUpdateCoordinator(
         hass,
         _LOGGER,
-        name=f"{DOMAIN}_xlsx_{entry.entry_id}",
+        name=f"{DOMAIN}_excel_{entry.entry_id}",
         update_method=async_update_xlsx_data,
         update_interval=timedelta(seconds=DEFAULT_XLSX_SCAN_INTERVAL),
     )
 
     await coordinator.async_config_entry_first_refresh()
 
-    if not coordinator.data:
-        _LOGGER.error("No data received from XLSX file")
+    if coordinator.data is None:
+        _LOGGER.error("No data received from Excel file")
         return
 
-    entities = []
-    row = coordinator.data[selected_row_idx]
-    base_name = str(row.get(list(row.keys())[0], f"row_{selected_row_idx}"))
+    sensor = OpenDataExcelSensor(
+        coordinator,
+        entry,
+        config[CONF_EXCEL_ROW],
+        config[CONF_EXCEL_COLUMN],
+        config[CONF_SENSOR_NAME]
+    )
 
-    # Creiamo solo i sensori per i campi selezionati
-    for field_type, column in selected_fields:
-        clean_column = re.sub(r'[^a-z0-9_]+', '_', column.lower().strip())
-        sensor = OpenDataXLSXSensor(
-            coordinator,
-            entry,
-            selected_row_idx,
-            column,
-            base_name,
-            clean_column
-        )
-        entities.append(sensor)
+    async_add_entities([sensor])
 
-    if entities:
-        _LOGGER.info(
-            "Created %d XLSX sensors for entry %s",
-            len(entities),
-            entry.entry_id
-        )
-        async_add_entities(entities)
 
 async def setup_xml_sensors(
     hass: HomeAssistant,
@@ -262,7 +245,7 @@ async def setup_xml_sensors(
             try:
                 import xmltodict
                 xml_dict = xmltodict.parse(data.decode('utf-8'))
-                
+
                 # Estrai i dati delle stazioni
                 if 'array' in xml_dict and 'rows' in xml_dict['array']:
                     return xml_dict['array']['rows']['stationValues']
@@ -305,7 +288,8 @@ async def setup_xml_sensors(
                         graphics = [graphics]
 
                     graphic = next(
-                        (g for g in graphics if g.get("code", "").lower() == key.lower()),
+                        (g for g in graphics if g.get(
+                            "code", "").lower() == key.lower()),
                         None
                     )
 
@@ -345,6 +329,7 @@ async def setup_xml_sensors(
             entry.entry_id
         )
         async_add_entities(entities)
+
 
 class OpenDataSensor(CoordinatorEntity, SensorEntity):
     """Representation of an OpenData South Tyrol sensor."""
@@ -419,6 +404,7 @@ class OpenDataSensor(CoordinatorEntity, SensorEntity):
         except:
             return False
 
+
 class OpenDataXMLSensor(CoordinatorEntity, SensorEntity):
     """Representation of an OpenData XML sensor."""
 
@@ -442,7 +428,8 @@ class OpenDataXMLSensor(CoordinatorEntity, SensorEntity):
 
         # Pulisci i nomi per entity_id
         clean_row_name = re.sub(r'[^a-z0-9_]+', '_', row_name.lower().strip())
-        clean_description = re.sub(r'[^a-z0-9_]+', '_', description.lower().strip())
+        clean_description = re.sub(
+            r'[^a-z0-9_]+', '_', description.lower().strip())
         clean_row_name = re.sub(r'_+', '_', clean_row_name).strip('_')
         clean_description = re.sub(r'_+', '_', clean_description).strip('_')
 
@@ -460,20 +447,21 @@ class OpenDataXMLSensor(CoordinatorEntity, SensorEntity):
             row = self.coordinator.data[self._row_idx]
             # Cerca prima il valore diretto
             value = row.get(self._field, row.get(self._field.lower(), None))
-            
+
             if value is None or value == "--":
                 # Se non trova un valore diretto, cerca nei graphics
                 graphics = row.get("graphics", [])
                 if not isinstance(graphics, list):
                     graphics = [graphics]
-                
+
                 graphic = next(
-                    (g for g in graphics if g.get("code", "").lower() == self._field),
+                    (g for g in graphics if g.get(
+                        "code", "").lower() == self._field),
                     None
                 )
                 if graphic:
                     value = row.get(graphic["code"].lower(), None)
-            
+
             return value if value != "--" else None
         except Exception as err:
             _LOGGER.error("Error getting XML sensor value: %s", err)
@@ -495,7 +483,49 @@ class OpenDataXMLSensor(CoordinatorEntity, SensorEntity):
         except Exception:
             return {}
 
-class OpenDataXLSXSensor(CoordinatorEntity, SensorEntity):
+
+class OpenDataExcelSensor(CoordinatorEntity, SensorEntity):
+    """Representation of an OpenData Excel cell sensor."""
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        row: int,
+        column: str,
+        sensor_name: str
+    ) -> None:
+        """Initialize the Excel sensor."""
+        super().__init__(coordinator)
+        self._row = row - 1  # Convert to 0-based index
+        self._column = column
+        self._attr_name = sensor_name
+
+        # Create unique ID
+        self._attr_unique_id = f"{config_entry.entry_id}_excel_{column}{row}"
+
+        # Create entity ID
+        clean_name = re.sub(r'[^a-z0-9_]+', '_', sensor_name.lower().strip())
+        self.entity_id = f"sensor.provbz_excel_{clean_name}"
+        self._attr_icon = "mdi:file-excel"
+
+    @property
+    def native_value(self) -> Any:
+        """Return the state of the sensor."""
+        if not self.coordinator.data or not isinstance(self.coordinator.data, pd.DataFrame):
+            return None
+
+        try:
+            # Convert column letter to index
+            col_idx = 0
+            for i, letter in enumerate(reversed(self._column)):
+                col_idx += (ord(letter) - ord('A') + 1) * (26 ** i)
+            col_idx -= 1
+
+            return self.coordinator.data.iloc[self._row, col_idx]
+        except Exception as err:
+            _LOGGER.error("Error getting Excel cell value: %s", err)
+            return None
     """Representation of an OpenData XLSX sensor."""
 
     def __init__(
@@ -511,14 +541,15 @@ class OpenDataXLSXSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self._row_idx = row_idx
         self._column = column
-        
+
         # Create unique ID and entity ID
         self._attr_unique_id = f"{config_entry.entry_id}_xlsx_{row_idx}_{clean_column}"
-        
+
         # Clean up base_name for entity_id
-        clean_base_name = re.sub(r'[^a-z0-9_]+', '_', base_name.lower().strip())
+        clean_base_name = re.sub(
+            r'[^a-z0-9_]+', '_', base_name.lower().strip())
         clean_base_name = re.sub(r'_+', '_', clean_base_name).strip('_')
-        
+
         self.entity_id = f"sensor.provbz_xlsx_{clean_base_name}_{clean_column}"
         self._attr_name = f"{base_name} {column}"
         self._attr_icon = "mdi:file-excel"
@@ -528,7 +559,7 @@ class OpenDataXLSXSensor(CoordinatorEntity, SensorEntity):
         """Return the state of the sensor."""
         if not self.coordinator.data or self._row_idx >= len(self.coordinator.data):
             return None
-            
+
         try:
             row = self.coordinator.data[self._row_idx]
             return row.get(self._column)
@@ -540,7 +571,7 @@ class OpenDataXLSXSensor(CoordinatorEntity, SensorEntity):
         """Return additional attributes from the Excel row."""
         if not self.coordinator.data or self._row_idx >= len(self.coordinator.data):
             return {}
-            
+
         try:
             row = self.coordinator.data[self._row_idx]
             return {
