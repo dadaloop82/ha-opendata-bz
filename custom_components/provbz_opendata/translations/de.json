@@ -3,69 +3,98 @@
     "step": {
       "user": {
         "title": "OpenData Südtirol",
-        "description": "Diese Integration nutzt Daten von [Open Data Südtirol](https://data.civis.bz.it/dataset) unter der Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) Lizenz.\n\nNicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nUnterstützte Datentypen: {supported_types}.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nIntegrationsversion: {version}",
+        "description": "Diese Integration verwendet Daten von [Open Data Südtirol](https://data.civis.bz.it/dataset) unter der Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) Lizenz.\n\nNicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nUnterstützte Datentypen: {supported_types}.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, das Laden kann einige Sekunden dauern.\n\nVersion der Integration: {version}",
         "data": {
           "name": "Name der Integration"
         }
       },
       "language": {
         "title": "Sprachauswahl",
-        "description": "Diese Integration nutzt Daten von [Open Data Südtirol](https://data.civis.bz.it/dataset) unter der Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) Lizenz.\n\nNicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nWähle die Sprache der von der API bereitgestellten Daten.\nDiese Auswahl beeinflusst die Sprache der während der Konfiguration angezeigten Inhalte und der abgerufenen Daten.\n\nIntegrationsversion: {version}",
+        "description": "Diese Integration verwendet Daten von [Open Data Südtirol](https://data.civis.bz.it/dataset) unter der Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) Lizenz.\n\nNicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, das Laden kann einige Sekunden dauern.\n\nWählen Sie die Sprache der von der API bereitgestellten Daten.\nDiese Auswahl beeinflusst die Sprache der während der Konfiguration angezeigten Inhalte und der abgerufenen Daten.\n\nVersion der Integration: {version}",
         "data": {
           "language": "Sprache der Daten"
         }
       },
+      "xml": {
+        "title": "XML-Element auswählen",
+        "description": "Wählen Sie das zu überwachende Element in der XML-Datei aus.\nEine Vorschau wird angezeigt, um die Auswahl zu erleichtern."
+      },
       "group": {
         "title": "Gruppenauswahl",
-        "description": "Die Daten sind in thematischen Gruppen organisiert.\nWähle die Gruppe, die die für dich interessanten Daten enthält.\nDiese Auswahl bestimmt, welche Datensätze im nächsten Schritt verfügbar sind.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.",
+        "description": "Die Daten sind in thematischen Gruppen organisiert.\nWählen Sie die Gruppe aus, die die für Sie relevanten Daten enthält.\nDiese Auswahl bestimmt, welche Datensätze im nächsten Schritt verfügbar sind.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, das Laden kann einige Sekunden dauern.",
         "data": {
           "group_id": "Thematische Gruppe"
         }
       },
       "package": {
-        "title": "Datensatz-Auswahl",
-        "description": "Wähle den spezifischen Datensatz, der innerhalb der ausgewählten Gruppe überwacht werden soll.\nJeder Datensatz enthält Daten zu einem bestimmten Thema.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nAPI-URL: {api_url}",
+        "title": "Datensatz auswählen",
+        "description": "Wählen Sie den spezifischen Datensatz aus, der innerhalb der ausgewählten Gruppe überwacht werden soll.\nJeder Datensatz enthält Daten zu einem bestimmten Thema.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, das Laden kann einige Sekunden dauern.\n\nAPI-URL: {api_url}",
         "data": {
           "package_id": "Verfügbarer Datensatz"
         }
       },
       "resource": {
-        "title": "Ressourcenauswahl",
-        "description": "Wähle die Datenquelle zur Überwachung aus.\nDie Ressourcen sind die tatsächlichen Datenquellen innerhalb des ausgewählten Datensatzes.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, und das Laden kann einige Sekunden dauern.\n\nAPI-URL: {api_url}",
+        "title": "Ressource auswählen",
+        "description": "Wählen Sie die zu überwachende Datenressource aus.\nRessourcen sind die eigentlichen Datenquellen innerhalb des ausgewählten Datensatzes.\n\nDie Konfigurationsdaten werden in Echtzeit von der bereitgestellten API abgerufen, das Laden kann einige Sekunden dauern.\n\nNicht alle verfügbaren Datentypen werden von dieser Integration unterstützt.\n\nAPI-URL: {api_url}",
         "data": {
           "resource_id": "Verfügbare Ressource"
         }
       },
       "rows": {
-        "title": "Zeilenauswahl",
-        "description": "Wähle die Datenzeile zur Überwachung aus.\nFür jede Zeile werden die verfügbaren Werte angezeigt, um die Auswahl zu erleichtern.\n\nAPI-URL: {api_url}",
+        "title": "Zeile auswählen",
+        "description": "Wählen Sie die zu überwachende Datenzeile aus.\nFür jede Zeile werden die verfügbaren Werte angezeigt, um die Auswahl zu erleichtern.\n\nAPI-URL: {api_url}",
         "data": {
-          "row": "Verfügbare Zeile"
+          "row": "Verfügbare Zeile",
+          "confirm": "Auswahl bestätigen"
         }
       },
       "fields": {
-        "title": "Feldauswahl",
-        "description": "Wähle das Feld zur Überwachung aus.\nDieser Wert wird zu einem Sensor in Home Assistant.\nFür jedes Feld wird der aktuelle Wert als Vorschau angezeigt.\n\nAPI-URL: {api_url}",
+        "title": "Feld auswählen",
+        "description": "Wählen Sie das zu überwachende Feld aus.\nDieser Wert wird zu einem Sensor in Home Assistant.\nFür jedes Feld wird der aktuelle Wert als Vorschau angezeigt.\n\nAPI-URL: {api_url}",
         "data": {
-          "fields": "Feld zur Überwachung"
+          "fields": "Zu überwachendes Feld"
         }
       },
       "confirm": {
-        "title": "Konfigurationsbestätigung",
-        "description": "Überprüfe deine Auswahl. Home Assistant wird den folgenden Sensor erstellen:\n\n{fields_preview}\n\nAPI-URL: {api_url}\n\nMöchtest du mit dieser Konfiguration fortfahren?"
+        "title": "Konfiguration bestätigen",
+        "description": "Home Assistant wird den folgenden Sensor erstellen:\n\n{fields_preview}",
+        "previews": {
+          "entity": "{entity_id}: {value}",
+          "wfs": "Ein WFS-Tracker wird erstellt",
+          "error": "Fehler bei der Erstellung der Vorschau"
+        }
+      },
+      "excel_coordinates": {
+        "title": "Excel-Zelle zur Überwachung auswählen",
+        "description": "Sie können die Excel-Datei hier herunterladen: {url}\n\nGeben Sie die Koordinaten der zu überwachenden Zelle ein:",
+        "data": {
+          "excel_column": "Buchstabe der Spalte (z. B. A, B, C, AA)",
+          "excel_row": "Zeilennummer"
+        }
+      },
+      "excel_confirm": {
+        "title": "Auswahl der Excel-Zelle bestätigen",
+        "description": "Sie haben die Zelle {cell} ausgewählt, die den Wert {value} enthält.\n\nGeben Sie einen beschreibenden Namen für diesen Sensor ein:",
+        "data": {
+          "sensor_name": "Name des Sensors"
+        }
       }
     },
     "error": {
       "cannot_connect": "Verbindung zur API nicht möglich",
       "invalid_auth": "Ungültige Authentifizierung",
       "invalid_xlsx": "Die Excel-Datei kann nicht gelesen werden oder ist ungültig",
-      "no_fields_available": "Keine Felder in den Daten verfügbar",
-      "no_rows_available": "Keine Elemente in den Daten verfügbar",
-      "no_rows_selected": "Wähle eine Zeile aus",
-      "no_fields_selected": "Wähle ein Feld aus",
+      "no_fields_available": "Keine verfügbaren Felder in den Daten",
+      "no_rows_available": "Keine verfügbaren Elemente in den Daten",
+      "no_rows_selected": "Bitte wählen Sie eine Zeile aus",
+      "no_fields_selected": "Bitte wählen Sie ein Feld aus",
       "no_packages": "Keine Datensätze in der ausgewählten Gruppe verfügbar",
       "no_json_resources": "Keine Ressourcen im Datensatz verfügbar",
-      "unknown": "Unerwarteter Fehler"
+      "unknown": "Unerwarteter Fehler",
+      "no_xml_resources": "Keine Elemente in der XML-Datei gefunden",
+      "xml_parsing_error": "Fehler beim Verarbeiten der XML-Datei",
+      "invalid_coordinates": "Ungültige Koordinaten. Stellen Sie sicher, dass:\n- Der Buchstabe der Spalte korrekt ist (A-Z, AA-ZZ)\n- Die Zeilennummer in der Datei existiert\n- Die Zelle einen Wert enthält",
+      "empty_cell": "Die ausgewählte Zelle ist leer oder enthält einen ungültigen Wert.\nBitte wählen Sie eine Zelle mit einem numerischen Wert."
     },
     "loading_errors": {
       "default_groups": "Fehler beim Laden der Gruppen",
@@ -73,7 +102,8 @@
     },
     "previews": {
       "entity_value": "{entity_id} = {value}",
-      "sensor_preview": "{entity_id}: {value}"
+      "sensor_preview": "{entity_id}: {value}",
+      "error": "Fehler bei der Erstellung der Vorschau"
     },
     "excel": {
       "column_value": "{column}: {value}",
@@ -87,8 +117,5 @@
       "format": "[{format}] {name}",
       "unavailable": "🚫 [{format}] {name}"
     }
-  },
-  "labels": {
-    "format": "[{format}] {name}"
   }
 }

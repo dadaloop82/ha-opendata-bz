@@ -57,7 +57,7 @@
       },
       "confirm": {
         "title": "Conferma Configurazione",
-        "description": "Verifica la tua selezione. Home Assistant creerà il seguente sensore:\n\n{fields_preview}\n\nURL API: {api_url}\n\nVuoi procedere con questa configurazione?",
+        "description": "Home Assistant creerà i seguenti sensori:\n\n{fields_preview}",
         "previews": {
           "entity": "{entity_id}: {value}",
           "wfs": "Verrà creato un tracker WFS",

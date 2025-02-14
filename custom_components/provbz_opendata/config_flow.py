@@ -435,11 +435,14 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             if not self._packages:
                 errors["base"] = "no_packages"
             else:
-                packages = {
+                temp_packages = {
                     package["id"]: package.get(
                         "title", package.get("name", package["id"]))
                     for package in self._packages
                 }
+                # Ordina per titolo (case-insensitive)
+                packages = dict(sorted(temp_packages.items(),
+                                key=lambda x: x[1].lower()))
             if user_input is not None and not errors:
                 self._config.update(user_input)
                 self._current_api_url = (
@@ -1004,7 +1007,6 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data_schema=vol.Schema({}),
                     errors=errors,
                     description_placeholders={
-                        "api_url": self._api_url_link(),
                         "fields_preview": "Nessun dato geografico rilevato nel servizio WFS"
                     }
                 )
@@ -1021,9 +1023,9 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     data_schema=vol.Schema({}),
                     errors=errors,
                     description_placeholders={
-                        "api_url": self._api_url_link(),
                         "fields_preview": f"Troppi dati: {total_features} features rilevate"
-                    }
+                    },
+                    last_step=True
                 )
 
             preview_text = f"Verranno creati {total_features} sensori WFS"
@@ -1121,7 +1123,6 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             step_id="confirm",
             data_schema=vol.Schema({}),
             description_placeholders={
-                "api_url": self._api_url_link(),
                 "fields_preview": preview_text
             }
         )
@@ -1135,7 +1136,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             try:
                 column = user_input[CONF_EXCEL_COLUMN].upper()
                 row = int(user_input[CONF_EXCEL_ROW])
-                
+
                 # Ottieni i dati dall'Excel con opzioni specifiche
                 excel_data = await api.get_resource_binary(self._config["resource_url"])
                 data = pd.read_excel(
@@ -1145,13 +1146,13 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     keep_default_na=False,  # Non convertire automaticamente in NaN
                     dtype=str  # Leggi tutto come stringa inizialmente
                 )
-                
+
                 # Converti la lettera della colonna in indice
                 col_idx = 0
                 for i, letter in enumerate(reversed(column)):
                     col_idx += (ord(letter) - ord('A') + 1) * (26 ** i)
                 col_idx -= 1
-                
+
                 # Ottieni il valore della cella
                 try:
                     if row - 1 < len(data) and col_idx < len(data.columns):
@@ -1193,7 +1194,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 "url": f'<a href="{resource_url}" target="_blank">Scarica il file Excel</a>'
             }
         )
-        
+
     async def async_step_excel_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Confirm Excel cell selection and set sensor name."""
         if user_input is not None:

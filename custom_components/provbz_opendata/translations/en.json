@@ -3,56 +3,81 @@
     "step": {
       "user": {
         "title": "OpenData South Tyrol",
-        "description": "This integration uses data provided by [Open Data South Tyrol](https://data.civis.bz.it/dataset) under the Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) license.\n\nNot all available data types are supported by this integration.\n\nSupported data types: {supported_types}.\n\nThe configuration data is retrieved in real-time from the provided API, and loading may take a few seconds.\n\nIntegration version: {version}",
+        "description": "This integration uses data provided by [Open Data South Tyrol](https://data.civis.bz.it/dataset) under the Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) license.\n\nNot all available data types are supported by this integration.\n\nSupported data types: {supported_types}.\n\nThe configuration data is retrieved in real time from the provided API, and loading may take a few seconds.\n\nIntegration version: {version}",
         "data": {
           "name": "Integration Name"
         }
       },
       "language": {
         "title": "Language Selection",
-        "description": "This integration uses data provided by [Open Data South Tyrol](https://data.civis.bz.it/dataset) under the Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) license.\n\nNot all available data types are supported by this integration.\n\nThe configuration data is retrieved in real-time from the provided API, and loading may take a few seconds.\n\nSelect the language of the data provided by the API.\nThis choice will affect the language of the content displayed during configuration and the retrieved data.\n\nIntegration version: {version}",
+        "description": "This integration uses data provided by [Open Data South Tyrol](https://data.civis.bz.it/dataset) under the Creative Commons CC0 1.0 Universal - Public Domain Dedication (CC0 1.0) license.\n\nNot all available data types are supported by this integration.\n\nThe configuration data is retrieved in real time from the provided API, and loading may take a few seconds.\n\nSelect the language of the data provided by the API.\nThis choice will affect the language of the displayed content during configuration and the retrieved data.\n\nIntegration version: {version}",
         "data": {
           "language": "Data Language"
         }
       },
+      "xml": {
+        "title": "XML Element Selection",
+        "description": "Select the element to monitor in the XML file.\nA preview is shown to assist you in the selection."
+      },
       "group": {
         "title": "Group Selection",
-        "description": "The data is organized into thematic groups.\nSelect the group that contains the data you are interested in.\nThis choice will determine which datasets will be available in the next step.\n\nThe configuration data is retrieved in real-time from the provided API, and loading may take a few seconds.",
+        "description": "The data is organized into thematic groups.\nSelect the group that contains the data you are interested in.\nThis choice will determine which datasets will be available in the next step.\n\nThe configuration data is retrieved in real time from the provided API, and loading may take a few seconds.",
         "data": {
           "group_id": "Thematic Group"
         }
       },
       "package": {
         "title": "Dataset Selection",
-        "description": "Choose the specific dataset to monitor within the selected group.\nEach dataset contains data related to a specific theme.\n\nThe configuration data is retrieved in real-time from the provided API, and loading may take a few seconds.\n\nAPI URL: {api_url}",
+        "description": "Choose the specific dataset to monitor within the selected group.\nEach dataset contains data related to a specific theme.\n\nThe configuration data is retrieved in real time from the provided API, and loading may take a few seconds.\n\nAPI URL: {api_url}",
         "data": {
           "package_id": "Available Dataset"
         }
       },
       "resource": {
         "title": "Resource Selection",
-        "description": "Select the data resource to monitor.\nResources are the actual data sources within the selected dataset.\n\nThe configuration data is retrieved in real-time from the provided API, and loading may take a few seconds.\n\nAPI URL: {api_url}",
+        "description": "Select the data resource to monitor.\nResources are the actual data sources within the selected dataset.\n\nThe configuration data is retrieved in real time from the provided API, and loading may take a few seconds.\n\nNot all available data types are supported by this integration.\n\nAPI URL: {api_url}",
         "data": {
           "resource_id": "Available Resource"
         }
       },
       "rows": {
         "title": "Row Selection",
-        "description": "Select the data row to monitor.\nEach row displays the available values to facilitate selection.\n\nAPI URL: {api_url}",
+        "description": "Select the row of data to monitor.\nEach row's available values are displayed to facilitate selection.\n\nAPI URL: {api_url}",
         "data": {
-          "row": "Available Row"
+          "row": "Available Row",
+          "confirm": "Confirm Selection"
         }
       },
       "fields": {
         "title": "Field Selection",
-        "description": "Select the field to monitor.\nThis value will become a sensor in Home Assistant.\nFor each field, the current value is displayed as a preview.\n\nAPI URL: {api_url}",
+        "description": "Select the field to monitor.\nThis value will become a sensor in Home Assistant.\nFor each field, the current value is shown as a preview.\n\nAPI URL: {api_url}",
         "data": {
           "fields": "Field to Monitor"
         }
       },
       "confirm": {
         "title": "Configuration Confirmation",
-        "description": "Verify your selection. Home Assistant will create the following sensor:\n\n{fields_preview}\n\nAPI URL: {api_url}\n\nDo you want to proceed with this configuration?"
+        "description": "Home Assistant will create the following sensor:\n\n{fields_preview}",
+        "previews": {
+          "entity": "{entity_id}: {value}",
+          "wfs": "A WFS tracker will be created",
+          "error": "Error creating preview"
+        }
+      },
+      "excel_coordinates": {
+        "title": "Select the Excel Cell to Monitor",
+        "description": "You can download the Excel file here: {url}\n\nEnter the coordinates of the cell you want to monitor:",
+        "data": {
+          "excel_column": "Column letter (e.g., A, B, C, AA)",
+          "excel_row": "Row number"
+        }
+      },
+      "excel_confirm": {
+        "title": "Confirm Excel Cell Selection",
+        "description": "You have selected cell {cell}, which contains the value: {value}\n\nEnter a descriptive name for this sensor:",
+        "data": {
+          "sensor_name": "Sensor Name"
+        }
       }
     },
     "error": {
@@ -60,12 +85,16 @@
       "invalid_auth": "Invalid authentication",
       "invalid_xlsx": "The Excel file cannot be read or is invalid",
       "no_fields_available": "No fields available in the data",
-      "no_rows_available": "No elements available in the data",
+      "no_rows_available": "No items available in the data",
       "no_rows_selected": "Select a row",
       "no_fields_selected": "Select a field",
       "no_packages": "No datasets available in the selected group",
       "no_json_resources": "No resources available in the dataset",
-      "unknown": "Unexpected error"
+      "unknown": "Unexpected error",
+      "no_xml_resources": "No elements found in the XML file",
+      "xml_parsing_error": "Error processing the XML file",
+      "invalid_coordinates": "Invalid coordinates. Check that:\n- The column letter is correct (A-Z, AA-ZZ)\n- The row number exists in the file\n- The cell contains a value",
+      "empty_cell": "The selected cell is empty or contains an invalid value.\nSelect a cell that contains a numeric value."
     },
     "loading_errors": {
       "default_groups": "Error loading groups",
@@ -73,7 +102,8 @@
     },
     "previews": {
       "entity_value": "{entity_id} = {value}",
-      "sensor_preview": "{entity_id}: {value}"
+      "sensor_preview": "{entity_id}: {value}",
+      "error": "Error creating preview"
     },
     "excel": {
       "column_value": "{column}: {value}",
@@ -87,8 +117,5 @@
       "format": "[{format}] {name}",
       "unavailable": "🚫 [{format}] {name}"
     }
-  },
-  "labels": {
-    "format": "[{format}] {name}"
   }
 }
