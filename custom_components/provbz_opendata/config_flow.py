@@ -146,6 +146,33 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "value": f"field:{column}",
                                 "label": f"{formatted_label}: {value}"
                             })
+            elif self._config.get("resource_format") == "XML":
+                selected_row = self._rows_data[self._config["selected_rows"][0]]
+
+                # Gestisci i graphics come measurements
+                if "graphics" in selected_row:
+                    graphics = selected_row["graphics"]
+                    if not isinstance(graphics, list):
+                        graphics = [graphics]
+
+                    for graphic in graphics:
+                        code = graphic.get("code", "").lower()
+                        description = graphic.get("description", "")
+                        value = selected_row.get(
+                            code.lower(), selected_row.get(code, "N/A"))
+
+                        if str(value).strip() != "--":  # Non mostrare campi con "--"
+                            if description:
+                                label = f"{code} ({description}): {value}"
+                            else:
+                                label = f"{code}: {value}"
+
+                            options.append({
+                                "value": f"measurement:{code}",
+                                "label": label
+                            })
+                    options = self._sort_options(options)
+                    options = self._filter_na_values(options)
             else:  # JSON
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
 
@@ -193,6 +220,15 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if not options:
                 errors["base"] = "no_fields_available"
+                return self.async_show_form(
+                    step_id="fields",
+                    data_schema=vol.Schema({}),
+                    errors=errors,
+                    description_placeholders={
+                        "api_url": self._api_url_link()  # Aggiungi questo!
+                    }
+                )
+
 
             return self.async_show_form(
                 step_id="fields",
@@ -546,7 +582,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                     "Error processing WFS data: %s", error)
                                 errors["base"] = "wfs_error"
 
-                        elif self._config["resource_format"] in ["JSON", "XLSX", "XLS"]:
+                        elif self._config["resource_format"] in ["JSON", "XLSX", "XLS", "XML", "CSV"]:
                             # Tutti i formati gestiti vanno allo step rows
                             return await self.async_step_rows()
         except CannotConnect:
@@ -568,6 +604,39 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={"api_url": self._api_url_link()}
         )
+
+    def _find_deepest_list(self, data: dict) -> list | None:
+        """Trova la lista più profonda in una struttura XML nidificata."""
+        if isinstance(data, list):
+            return data
+        if isinstance(data, dict):
+            deepest_list = None
+            max_depth = -1
+
+            def _search_list(d: dict, depth: int) -> tuple[list | None, int]:
+                if isinstance(d, list):
+                    return d, depth
+                if isinstance(d, dict):
+                    max_d = depth
+                    result = None
+                    for v in d.values():
+                        if isinstance(v, (dict, list)):
+                            r, d = _search_list(v, depth + 1)
+                            if d > max_d:
+                                max_d = d
+                                result = r
+                    return result, max_d
+                return None, depth
+
+            for value in data.values():
+                if isinstance(value, (dict, list)):
+                    found_list, depth = _search_list(value, 0)
+                    if found_list and depth > max_depth:
+                        max_depth = depth
+                        deepest_list = found_list
+
+            return deepest_list
+        return None
 
     async def async_step_rows(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle row selection step."""
@@ -683,6 +752,47 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             "label": row_label
                         })
 
+            elif self._config.get("resource_format") == "XML":
+                if not self._rows_data:
+                    data = await client.get_resource_binary(self._config["resource_url"])
+                    try:
+                        xml_dict = xmltodict.parse(data.decode('utf-8'))
+
+                        # Trova la lista di stationValues
+                        if 'array' in xml_dict and 'rows' in xml_dict['array']:
+                            self._rows_data = xml_dict['array']['rows']['stationValues']
+                            if not isinstance(self._rows_data, list):
+                                self._rows_data = [self._rows_data]
+                        else:
+                            errors["base"] = "invalid_xml_format"
+                            return self.async_show_form(
+                                step_id="rows",
+                                data_schema=vol.Schema({}),
+                                errors=errors
+                            )
+
+                        _LOGGER.debug("Found %d stations in XML",
+                                      len(self._rows_data))
+
+                    except Exception as err:
+                        _LOGGER.exception("Error parsing XML: %s", err)
+                        errors["base"] = "xml_parse_error"
+                        return self.async_show_form(
+                            step_id="rows",
+                            data_schema=vol.Schema({}),
+                            errors=errors
+                        )
+
+                # Create options from XML rows
+                for idx, row in enumerate(self._rows_data):
+                    if isinstance(row, dict):
+                        # Usa il campo name come etichetta
+                        name = row.get("name", "")
+                        if name:
+                            options.append({
+                                "value": f"row_{idx}",
+                                "label": name
+                            })
             if not options:
                 errors["base"] = "no_valid_rows"
                 return self.async_show_form(
@@ -743,6 +853,34 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                                 "value": f"field:{column}",
                                 "label": f"{formatted_label}: {value}"
                             })
+
+            elif self._config.get("resource_format") == "XML":
+                selected_row = self._rows_data[self._config["selected_rows"][0]]
+
+                # Gestisci i graphics come measurements
+                if "graphics" in selected_row:
+                    graphics = selected_row["graphics"]
+                    if not isinstance(graphics, list):
+                        graphics = [graphics]
+
+                    for graphic in graphics:
+                        code = graphic.get("code", "").lower()
+                        description = graphic.get("description", "")
+                        value = selected_row.get(
+                            code.lower(), selected_row.get(code, "N/A"))
+
+                        if str(value).strip() != "--":  # Non mostrare campi con "--"
+                            if description:
+                                label = f"{code} ({description}): {value}"
+                            else:
+                                label = f"{code}: {value}"
+
+                            options.append({
+                                "value": f"measurement:{code}",
+                                "label": label
+                            })
+                    options = self._sort_options(options)
+                    options = self._filter_na_values(options)
             else:  # JSON
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
 
@@ -909,7 +1047,45 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except Exception as err:
                 _LOGGER.error("Error creating preview: %s", err)
                 preview_text = await self.translations["previews"]["error"]
-        else:
+
+        elif self._config.get("resource_format", "").upper() == "XML":
+            # Generiamo la preview per i sensori XML
+            sensor_previews = []
+            for row in [self._rows_data[idx] for idx in self._config.get("selected_rows", [])]:
+                row_name = row.get("name", "row")
+                row_name_clean = self._sanitize_entity_name(row_name)
+
+                for field_type, key in self._config["selected_fields"]:
+                    if field_type == "measurement":
+                        # Cerca il graphic corrispondente
+                        graphics = row.get("graphics", [])
+                        if not isinstance(graphics, list):
+                            graphics = [graphics]
+
+                        graphic = next(
+                            (g for g in graphics
+                             if g.get("code", "").lower() == key.lower()),
+                            None
+                        )
+
+                        if graphic and "description" in graphic:
+                            # Se c'è una descrizione, usala come nome del sensore
+                            sensor_field = self._sanitize_entity_name(
+                                graphic["description"])
+                        else:
+                            # Altrimenti usa il codice
+                            sensor_field = self._sanitize_entity_name(key)
+                    else:
+                        sensor_field = self._sanitize_entity_name(key)
+
+                    value = row.get(key.lower(), row.get(key, "N/A"))
+                    if str(value).strip() != "--":  # Non includere valori "--"
+                        entity_id = f"sensor.provbz_{row_name_clean}_{sensor_field}"
+                        sensor_previews.append(f"{entity_id}: {value}")
+
+            preview_text = "\n".join(sensor_previews)
+        else:  # JSON
+
             # Generate preview for JSON sensors
             sensor_previews = []
             for row in [self._rows_data[idx] for idx in self._config.get("selected_rows", [])]:
@@ -920,19 +1096,20 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     if field_type == "measurement":
                         measurement = next(
                             (m for m in row.get("measurements", [])
-                            if m.get("code", "").lower() == key.lower()),
+                             if m.get("code", "").lower() == key.lower()),
                             None
                         )
                         if measurement and "description" in measurement:
                             # Se c'è una descrizione, usa SOLO la descrizione e ignora il codice (q)
-                            sensor_field = self._sanitize_entity_name(measurement["description"])
+                            sensor_field = self._sanitize_entity_name(
+                                measurement["description"])
                         else:
                             # Solo se non c'è descrizione, usa il codice
                             sensor_field = self._sanitize_entity_name(key)
                     else:
                         # Per campi non-measurement
                         sensor_field = self._sanitize_entity_name(key)
-                        
+
                     entity_id = f"sensor.provbz_{row_name_clean}_{sensor_field}"
                     value = row.get(key, "N/A")
                     sensor_previews.append(f"{entity_id}: {value}")

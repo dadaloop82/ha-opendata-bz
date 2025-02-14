@@ -54,7 +54,6 @@ async def async_setup_entry(
     _LOGGER.debug("Setting up sensors for entry: %s", entry.entry_id)
 
     entry_data = hass.data[DOMAIN][entry.entry_id]
-    api = entry_data["api"]
     config = entry_data["config"]
     
     # Determine the resource format and handle accordingly
@@ -62,6 +61,8 @@ async def async_setup_entry(
     
     if resource_format in XLSX_SUPPORTED_FORMATS:
         await setup_xlsx_sensors(hass, entry, entry_data, async_add_entities)
+    elif resource_format == "XML":
+        await setup_xml_sensors(hass, entry, entry_data, async_add_entities)
     else:
         await setup_standard_sensors(hass, entry, entry_data, async_add_entities)
 
@@ -238,6 +239,112 @@ async def setup_xlsx_sensors(
         )
         async_add_entities(entities)
 
+async def setup_xml_sensors(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    entry_data: dict,
+    async_add_entities: AddEntitiesCallback
+) -> None:
+    """Set up sensors for XML data sources."""
+    api = entry_data["api"]
+    config = entry_data["config"]
+    rows_data = entry_data.get("rows_data", [])
+
+    async def async_update_xml_data():
+        """Fetch data from XML source."""
+        try:
+            url = config.get("resource_url")
+            if not url:
+                _LOGGER.error("No resource URL found in config")
+                return rows_data
+
+            data = await api.get_resource_binary(url)
+            try:
+                import xmltodict
+                xml_dict = xmltodict.parse(data.decode('utf-8'))
+                
+                # Estrai i dati delle stazioni
+                if 'array' in xml_dict and 'rows' in xml_dict['array']:
+                    return xml_dict['array']['rows']['stationValues']
+                return rows_data
+            except Exception as err:
+                _LOGGER.error("Error parsing XML data: %s", err)
+                return rows_data
+
+        except Exception as err:
+            _LOGGER.error("Error fetching XML data: %s", err)
+            return rows_data
+
+    coordinator = DataUpdateCoordinator(
+        hass,
+        _LOGGER,
+        name=f"{DOMAIN}_xml_{entry.entry_id}",
+        update_method=async_update_xml_data,
+        update_interval=timedelta(seconds=DEFAULT_SCAN_INTERVAL),
+    )
+
+    await coordinator.async_config_entry_first_refresh()
+
+    entities = []
+    selected_rows = config.get("selected_rows", [])
+    selected_fields = config.get("selected_fields", [])
+
+    for row_idx in selected_rows:
+        if row_idx >= len(rows_data):
+            continue
+
+        row = rows_data[row_idx]
+        row_name = row.get("name", f"station_{row_idx}")
+
+        for field_type, key in selected_fields:
+            try:
+                if field_type == "measurement":
+                    # Trova il graphic corrispondente
+                    graphics = row.get("graphics", [])
+                    if not isinstance(graphics, list):
+                        graphics = [graphics]
+
+                    graphic = next(
+                        (g for g in graphics if g.get("code", "").lower() == key.lower()),
+                        None
+                    )
+
+                    if graphic:
+                        description = graphic.get("description", key)
+                        sensor = OpenDataXMLSensor(
+                            coordinator,
+                            entry,
+                            row_idx,
+                            key,
+                            row_name,
+                            description
+                        )
+                        entities.append(sensor)
+                else:
+                    sensor = OpenDataXMLSensor(
+                        coordinator,
+                        entry,
+                        row_idx,
+                        key,
+                        row_name,
+                        key
+                    )
+                    entities.append(sensor)
+            except Exception as err:
+                _LOGGER.error(
+                    "Error creating XML sensor for %s - %s: %s",
+                    row_name,
+                    key,
+                    err
+                )
+
+    if entities:
+        _LOGGER.info(
+            "Created %d XML sensors for entry %s",
+            len(entities),
+            entry.entry_id
+        )
+        async_add_entities(entities)
 
 class OpenDataSensor(CoordinatorEntity, SensorEntity):
     """Representation of an OpenData South Tyrol sensor."""
@@ -312,6 +419,81 @@ class OpenDataSensor(CoordinatorEntity, SensorEntity):
         except:
             return False
 
+class OpenDataXMLSensor(CoordinatorEntity, SensorEntity):
+    """Representation of an OpenData XML sensor."""
+
+    def __init__(
+        self,
+        coordinator: DataUpdateCoordinator,
+        config_entry: ConfigEntry,
+        row_idx: int,
+        field: str,
+        row_name: str,
+        description: str
+    ) -> None:
+        """Initialize the XML sensor."""
+        super().__init__(coordinator)
+        self._row_idx = row_idx
+        self._field = field.lower()  # Converti in minuscolo per il confronto
+        self._config_entry = config_entry
+
+        # Crea unique_id
+        self._attr_unique_id = f"{config_entry.entry_id}_xml_{row_idx}_{field}"
+
+        # Pulisci i nomi per entity_id
+        clean_row_name = re.sub(r'[^a-z0-9_]+', '_', row_name.lower().strip())
+        clean_description = re.sub(r'[^a-z0-9_]+', '_', description.lower().strip())
+        clean_row_name = re.sub(r'_+', '_', clean_row_name).strip('_')
+        clean_description = re.sub(r'_+', '_', clean_description).strip('_')
+
+        self.entity_id = f"sensor.provbz_{clean_row_name}_{clean_description}"
+        self._attr_name = f"{row_name} {description}"
+        self._attr_icon = DEFAULT_ICON
+
+    @property
+    def native_value(self) -> Any:
+        """Return the state of the sensor."""
+        if not self.coordinator.data or self._row_idx >= len(self.coordinator.data):
+            return None
+
+        try:
+            row = self.coordinator.data[self._row_idx]
+            # Cerca prima il valore diretto
+            value = row.get(self._field, row.get(self._field.lower(), None))
+            
+            if value is None or value == "--":
+                # Se non trova un valore diretto, cerca nei graphics
+                graphics = row.get("graphics", [])
+                if not isinstance(graphics, list):
+                    graphics = [graphics]
+                
+                graphic = next(
+                    (g for g in graphics if g.get("code", "").lower() == self._field),
+                    None
+                )
+                if graphic:
+                    value = row.get(graphic["code"].lower(), None)
+            
+            return value if value != "--" else None
+        except Exception as err:
+            _LOGGER.error("Error getting XML sensor value: %s", err)
+            return None
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return additional attributes from the XML data."""
+        if not self.coordinator.data or self._row_idx >= len(self.coordinator.data):
+            return {}
+
+        try:
+            row = self.coordinator.data[self._row_idx]
+            # Filtra gli attributi per includere solo quelli rilevanti
+            return {
+                k: v for k, v in row.items()
+                if k != "graphics" and k != self._field and k != self._field.lower()
+            }
+        except Exception:
+            return {}
 
 class OpenDataXLSXSensor(CoordinatorEntity, SensorEntity):
     """Representation of an OpenData XLSX sensor."""
