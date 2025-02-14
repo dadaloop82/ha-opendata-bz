@@ -178,6 +178,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     options = self._filter_na_values(options)
             else:  # JSON
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
+                fields_with_description = set()  # Set per tenere traccia dei campi con descrizione
 
                 # Process measurement fields if available
                 measurements = selected_row.get("measurements", [])
@@ -187,23 +188,32 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             code = measurement["code"].lower()
                             description = measurement["description"]
                             value = selected_row.get(code, "N/A")
-                            options.append({
-                                "value": f"measurement:{code}",
-                                "label": f"{code} ({description}): {value}"
-                            })
-                    options = self._sort_options(options)
-                    options = self._filter_na_values(options)
+                            if value != "--" and str(value).strip() != "--":
+                                options.append({
+                                    "value": f"measurement:{code}",
+                                    "label": f"{code} ({description}): {value}"
+                                })
+                                # Aggiungi il codice al set
+                                fields_with_description.add(code)
                     processed_fields.add(code)
 
                 # Process regular fields not already handled as measurements
                 for field_name, field_value in selected_row.items():
                     if (field_name != "measurements" and
                             field_name.lower() not in processed_fields and
-                            not isinstance(field_value, (dict, list))):
+                            # Skip se già presente con descrizione
+                            field_name.lower() not in fields_with_description and
+                            not isinstance(field_value, (dict, list)) and
+                            field_value != "--" and
+                            str(field_value).strip() != "--"):
                         options.append({
                             "value": f"field:{field_name}",
                             "label": f"{field_name}: {field_value}"
                         })
+
+                # Ordina e filtra le opzioni alla fine
+                options = self._sort_options(options)
+                options = self._filter_na_values(options)
 
             if user_input is not None:
                 selected = user_input.get("fields", [])
@@ -889,6 +899,7 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     options = self._filter_na_values(options)
             else:  # JSON
                 selected_row = self._rows_data[self._config["selected_rows"][0]]
+                fields_with_description = set()  # Set per tenere traccia dei campi con descrizione
 
                 # Process measurement fields if available
                 measurements = selected_row.get("measurements", [])
@@ -896,25 +907,42 @@ class ProvbzOpendataConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     for measurement in measurements:
                         if "description" in measurement and "code" in measurement:
                             code = measurement["code"].lower()
-                            description = measurement["description"]
+                            # Aggiungi sia il codice che il nome del campo al set
+                            fields_with_description.add(code)
+                            # Aggiungi anche il nome del campo al set per evitare duplicati
+                            field_name = next(
+                                (name for name, value in selected_row.items()
+                                 if name.lower() == code.lower()),
+                                None
+                            )
+                            if field_name:
+                                fields_with_description.add(field_name.lower())
+
                             value = selected_row.get(code, "N/A")
-                            options.append({
-                                "value": f"measurement:{code}",
-                                "label": f"{code} ({description}): {value}"
-                            })
-                    options = self._sort_options(options)
-                    options = self._filter_na_values(options)
-                    processed_fields.add(code)
+                            if value != "--" and str(value).strip() != "--":
+                                options.append({
+                                    "value": f"measurement:{code}",
+                                    "label": f"{code} ({measurement['description']}): {value}"
+                                })
 
                 # Process regular fields not already handled as measurements
                 for field_name, field_value in selected_row.items():
+                    field_name_lower = field_name.lower()
                     if (field_name != "measurements" and
-                            field_name.lower() not in processed_fields and
-                            not isinstance(field_value, (dict, list))):
+                            field_name_lower not in processed_fields and
+                            # Skip se già presente con descrizione
+                            field_name_lower not in fields_with_description and
+                            not isinstance(field_value, (dict, list)) and
+                            field_value != "--" and
+                            str(field_value).strip() != "--"):
                         options.append({
                             "value": f"field:{field_name}",
                             "label": f"{field_name}: {field_value}"
                         })
+
+                # Ordina e filtra le opzioni alla fine
+                options = self._sort_options(options)
+                options = self._filter_na_values(options)
 
             if user_input is not None:
                 selected = user_input.get("fields", [])
